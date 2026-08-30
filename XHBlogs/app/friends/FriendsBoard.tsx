@@ -163,7 +163,6 @@ export default function FriendsBoard() {
         </div>
 
         {/* 渲染评论组件 */}
-        <Comments />
       </motion.div>
 
     </div>

@@ -70,14 +70,12 @@ export default function Navbar() {
 
   const navLinks = [
     { name: '首页', href: '/' },
-    { name: '项目', href: '/projects' },
+    { name: '个人介绍', href: '/portfolio/', external: true },
     { name: '归档', href: '/timeline' },
     { name: '照片墙', href: '/photowall' },
     { name: '音乐', href: '/music' },
-    { name: '灵境', href: '/tree' },
     { name: '说说', href: '/moments' },
     { name: '杂谈', href: '/chatter' },
-    { name: '友链', href: '/friends' },
     { name: '关于', href: '/about' },
   ];
 
@@ -98,6 +96,13 @@ export default function Navbar() {
             {/* PC端依然使用全量的 navLinks */}
             {navLinks.map((link) => {
               const isActive = pathname === link.href || pathname === `${link.href}/`;
+              if ((link as any).external) {
+                return (
+                  <a key={link.href} href={link.href} className={`relative py-1 transition-colors ${pathname.startsWith('/portfolio') ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-200 hover:text-indigo-600'}`}>
+                    {link.name}
+                  </a>
+                );
+              }
               return (
                 <Link key={link.href} href={link.href} className={`relative py-1 transition-colors ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-700 dark:text-slate-200 hover:text-indigo-600'}`}>
                   {link.name}
@@ -177,7 +182,7 @@ export default function Navbar() {
                         }}
                       >
                         <motion.div style={{ rotate: inverseRotation }} className="w-full h-full">
-                          <Link
+                          <a
                             href={link.href}
                             onClick={() => setIsMobileMenuOpen(false)}
                             className={`flex items-center justify-center w-full h-full rounded-full transition-all duration-300 ${
@@ -187,7 +192,7 @@ export default function Navbar() {
                             }`}
                           >
                             <span className="text-[11px] font-black">{link.name}</span>
-                          </Link>
+                          </a>
                         </motion.div>
                       </div>
                     );

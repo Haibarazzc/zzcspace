@@ -12,8 +12,6 @@ import BackgroundSlider from "../components/BackgroundSlider";
 import GlobalToolbox from "../components/GlobalToolbox";
 import SplashScreen from "../components/SplashScreen";
 import CyberCat from '../components/CyberCat';
-import DanmakuBackground from '../components/DanmakuBackground';
-
 import MobileBackButton from '../components/MobileBackButton';
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -94,7 +92,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
 
               {/* 隐藏手机端弹幕 */}
               <div className="hidden md:block">
-                <DanmakuBackground />
               </div>
 
               <div className="relative z-10 flex-1 flex flex-col">

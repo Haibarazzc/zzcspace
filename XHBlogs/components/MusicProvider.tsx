@@ -62,6 +62,18 @@ interface MusicContextType {
 
 const MusicContext = createContext<MusicContextType | null>(null);
 
+// 自托管歌单：本地音频文件（不依赖网易云 VIP 接口）
+const LOCAL_PLAYLIST = [
+  {
+    id: 'wei-yi-local',
+    title: '唯一',
+    artist: '邓紫棋 G.E.M.',
+    cover: 'https://p1.music.126.net/aJWtwvdYRXvKUpAE2C6NoA==/109951168919708423.jpg?param=500y500',
+    src: 'https://raw.githubusercontent.com/Haibarazzc/zzc-xhblogs/main/wei-yi.m4a',
+    lyrics: [] as { time: number; text: string }[],
+  },
+];
+
 export function MusicProvider({ children }: { children: ReactNode }) {
   const [playlist, setPlaylist] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -83,29 +95,12 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let isMounted = true;
     const fetchMusicData = async () => {
-      try {
-        const res = await fetch(`/api/music?ids=${siteConfig.cloudMusicIds.join(',')}`);
-        const rawResults = await res.json();
-
-        const mergedPlaylist = rawResults
-          .filter((song: any) => song && song.url && !song.error)
-          .map((song: any) => ({
-            id: song.id || Math.random().toString(),
-            title: song.name || '未知歌曲',
-            artist: song.artist || song.author || '未知歌手',
-            cover: song.cover || song.pic || 'https://bu.dusays.com/2026/03/24/69c24230a5ff8.jpg',
-            src: song.url,
-            lrcUrl: null,
-            lyrics: song.lrc ? parseLrc(song.lrc) : []
-          }));
-
-        if (isMounted) {
-          if (mergedPlaylist.length > 0) setPlaylist(mergedPlaylist);
-          else setCurrentLyric("云端链路受阻");
-          setIsLoading(false);
-        }
-      } catch (error) {
-        if (isMounted) { setCurrentLyric("网络初始化失败"); setIsLoading(false); }
+      // 纯静态模式：音频托管在 GitHub 仓库，直接使用本地歌单
+      if (isMounted) {
+        setPlaylist(LOCAL_PLAYLIST);
+        setCurrentIndex(0);
+        setCurrentLyric("♪ 纯享音乐 ♪");
+        setIsLoading(false);
       }
     };
 

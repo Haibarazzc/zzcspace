@@ -1,44 +1,30 @@
-// 🛡️ 本文件由 XingHuiSama 控制台自动生成，请勿手动修改
+// 🛡️ 本文件由控制台自动生成（内容已替换为 曾子丞 的摄影作品）
 export interface Photo { url: string; caption?: string; }
 export interface Album { id: string; title: string; description: string; cover: string; date: string; photos: Photo[]; }
 
 export const albums: Album[] = [
   {
-    "id": "terra-journey",
-    "title": "泰拉大陆纪行",
-    "description": "关于源石、孤星与前文明的视觉记录（测试用相册）",
-    "cover": "https://bu.dusays.com/2026/03/24/69c24230de927.jpg",
-    "date": "2026.01",
+    "id": "city-lights",
+    "title": "城市光影",
+    "description": "蓝调时刻的城市天际线与车流光轨 —— 记录光经过世界的方式",
+    "cover": "/photos/gallery-01.webp",
+    "date": "2025.11",
     "photos": [
-      {
-        "url": "https://bu.dusays.com/2026/03/31/69cb69bb530d8.jpg",
-        "caption": "原来的人"
-      },
-      {
-        "url": "https://bu.dusays.com/2026/03/24/69c24230de927.jpg",
-        "caption": "星空漫游"
-      }
+      { "url": "/photos/gallery-01.webp", "caption": "Observation / 01" },
+      { "url": "/photos/gallery-02.webp", "caption": "Observation / 02" },
+      { "url": "/photos/gallery-03.webp", "caption": "Observation / 03" }
     ]
   },
   {
-    "id": "history-tour",
-    "title": "唐宋历史巡游",
-    "description": "寻访千年前的长安与汴梁遗迹（测试用相册）",
-    "cover": "https://bu.dusays.com/2026/03/24/69c24230a4efe.jpg",
-    "date": "2025.10",
+    "id": "edge-of-city",
+    "title": "城市边缘",
+    "description": "晚霞、云层与城市的边界",
+    "cover": "/photos/gallery-04.webp",
+    "date": "2025.12",
     "photos": [
-      {
-        "url": "https://bu.dusays.com/2026/03/24/69c24230a5ff8.jpg",
-        "caption": "古都夕阳"
-      },
-      {
-        "url": "https://bu.dusays.com/2026/03/24/69c24230d661d.jpg",
-        "caption": "青石板小路"
-      },
-      {
-        "url": "https://bu.dusays.com/2026/03/24/69c24230de927.jpg",
-        "caption": "飞檐翘角"
-      }
+      { "url": "/photos/gallery-04.webp", "caption": "Observation / 04" },
+      { "url": "/photos/gallery-05.webp", "caption": "Observation / 05" },
+      { "url": "/photos/gallery-06.webp", "caption": "Observation / 06" }
     ]
   }
-];
+]

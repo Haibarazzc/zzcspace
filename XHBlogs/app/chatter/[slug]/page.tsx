@@ -22,8 +22,6 @@ import { siteConfig } from '../../../siteConfig';
 import ClientSocials from '../../../components/ClientSocials';
 import SidebarLyric from '../../../components/SidebarLyric';
 import BackButton from '../../../components/BackButton';
-import Comments from '../../../components/Comments';
-
 export async function generateStaticParams() {
   const chattersDirectory = path.join(process.cwd(), 'chatters');
   if (!fs.existsSync(chattersDirectory)) return [];
@@ -280,7 +278,6 @@ export default async function ChatterDetail({ params }: { params: Promise<{ slug
               </div>
 
               <div className="mt-10 md:mt-12">
-                <Comments />
               </div>
 
             </div>

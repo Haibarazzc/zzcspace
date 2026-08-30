@@ -10,15 +10,12 @@ import { siteConfig } from '../siteConfig';
 import CloudPlayer from '../components/CloudPlayer';
 import ThemeToggleBlock from '../components/ThemeToggleBlock';
 import ProfileCard from '../components/ProfileCard';
-import SiteDashboard from '../components/SiteDashboard';
 import { albums } from '../data/albums';
 import LyricBar from '../components/LyricBar';
 import { ToastProvider } from '../components/ToastProvider';
 
 import LatestPostsCarousel from '../components/LatestPostsCarousel';
 import LatestChatterCarousel from '../components/LatestChatterCarousel';
-import DanmakuBackground from '../components/DanmakuBackground';
-
 function formatUpdateTime(dateString: string) {
   if (!dateString || dateString === '1970-01-01') return '刚刚更新';
   try {
@@ -150,7 +147,6 @@ export default function Home() {
               </div>
 
               {/* 底部数据面板 */}
-              <div className="w-full mt-4"><SiteDashboard/></div>
             </main>
           </div>
         </PageTransition>
