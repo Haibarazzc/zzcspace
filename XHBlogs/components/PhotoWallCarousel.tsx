@@ -5,9 +5,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { albums, ungroupedPhotos } from "../data/albums";
 
-const photos = albums.flatMap((album) =>
-  album.photos.map((photo) => ({ ...photo, albumTitle: album.title }))
-).concat(ungroupedPhotos.map((photo) => ({ ...photo, albumTitle: "新加入的瞬间" })));
+const photos = albums.flatMap((album) => album.photos).concat(ungroupedPhotos);
 
 export default function PhotoWallCarousel() {
   const [index, setIndex] = useState(0);
@@ -38,7 +36,6 @@ export default function PhotoWallCarousel() {
       </AnimatePresence>
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/10 pointer-events-none" />
       <div className="absolute bottom-4 left-4 sm:bottom-6 sm:left-6 right-6 z-10 pointer-events-none">
-        <p className="text-white/70 text-xs font-semibold tracking-widest uppercase mb-1">{photo.albumTitle}</p>
         <h3 className="text-2xl sm:text-3xl font-bold text-white mb-1 sm:mb-2 underline decoration-pink-400">光影画廊</h3>
         <p className="text-white/90 text-sm sm:text-lg line-clamp-1">{photo.caption}</p>
       </div>
