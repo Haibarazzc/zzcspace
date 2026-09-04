@@ -7,6 +7,11 @@
       "permanent": true
     },
     {
+      "source": "/blog/:path*/",
+      "destination": "/portfolio/blog/:path*/",
+      "permanent": true
+    },
+    {
       "source": "/blog/:path*",
       "destination": "/portfolio/blog/:path*",
       "permanent": true
