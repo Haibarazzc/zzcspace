@@ -89,10 +89,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 </div>
               </div>
 
-              {/* 隐藏手机端弹幕 */}
-              <div className="hidden md:block">
-              </div>
-
               <div className="relative z-10 flex-1 flex flex-col">
                 {children}
               </div>
@@ -103,8 +99,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 <FloatingPlayer />
               </div>
 
-              <div className="hidden md:block">
-              </div>
 
               <div className="md:hidden block">
                 <MobileBackButton />
@@ -125,8 +119,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             `}} />
           </MusicProvider>
 
-          <div className="hidden md:block">
-          </div>
 
         </ThemeProvider>
       </body>

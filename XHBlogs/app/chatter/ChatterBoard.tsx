@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { siteConfig } from '../../siteConfig';
 
-type Chatter = {
+export type Chatter = {
   slug: string;
   title: string;
   date: string;

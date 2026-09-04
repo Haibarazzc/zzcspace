@@ -1,7 +1,6 @@
 "use client";
 
 import { createContext, useContext, useState, useRef, useEffect, ReactNode } from 'react';
-import { siteConfig } from '../siteConfig';
 
 // 【增强版 LRC 歌词解析】
 function parseLrc(lrcText: string) {
@@ -95,27 +94,10 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
-    let isMounted = true;
-    const fetchMusicData = async () => {
-      // 纯静态模式：音频托管在 GitHub 仓库，直接使用本地歌单
-      if (isMounted) {
-        setPlaylist(LOCAL_PLAYLIST);
-        setCurrentIndex(0);
-        setCurrentLyric("♪ 纯享音乐 ♪");
-        setIsLoading(false);
-      }
-    };
-
-    if (siteConfig.cloudMusicIds?.length > 0) fetchMusicData();
-    else {
-      // 无云歌单时直接用本地歌单（修复：之前只关 loading 不设 playlist → 空态）
-      setPlaylist(LOCAL_PLAYLIST);
-      setCurrentIndex(0);
-      setCurrentLyric("♪ 纯享音乐 ♪");
-      setIsLoading(false);
-    }
-
-    return () => { isMounted = false; };
+    setPlaylist(LOCAL_PLAYLIST);
+    setCurrentIndex(0);
+    setCurrentLyric("♪ 纯享音乐 ♪");
+    setIsLoading(false);
   }, []);
 
   useEffect(() => {

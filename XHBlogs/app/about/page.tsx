@@ -1,15 +1,8 @@
+import { renderMarkdown } from '@/lib/markdown';
 // src/app/about/page.tsx
 import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
-import { unified } from 'unified';
-import remarkParse from 'remark-parse';
-import remarkGfm from 'remark-gfm'; // 🌟 引入 GFM 以支持 ~~删除线~~
-import remarkMath from 'remark-math';
-import remarkRehype from 'remark-rehype';
-import rehypeHighlight from 'rehype-highlight';
-import rehypeKatex from 'rehype-katex';
-import rehypeStringify from 'rehype-stringify';
 
 // 引入高亮主题
 import 'highlight.js/styles/atom-one-dark.css';
@@ -70,23 +63,9 @@ export default async function AboutPage() {
     }).join('');
     // ==========================================
 
-    const processedContent = await unified()
-      .use(remarkParse)
-      .use(remarkGfm) // 🌟 挂载 GFM 解析
-      .use(remarkMath)
-      .use(remarkRehype, { allowDangerousHtml: true })
-      // 🌟 核心修复：开启自动语言侦测，并限制语言白名单！
-      // @ts-ignore
-      .use(rehypeHighlight, {
-        detect: true,
-        ignoreMissing: true,
-        subset: ['cpp', 'c', 'python', 'java', 'javascript', 'typescript', 'go', 'rust', 'bash', 'json', 'html', 'css', 'sql', 'xml']
-      })
-      .use(rehypeKatex)
-      .use(rehypeStringify, { allowDangerousHtml: true })
-      .process(content);
+    const processedContent = await renderMarkdown(content);
 
-    contentHtml = processedContent.toString();
+    contentHtml = processedContent;
   } catch (e) {
     console.error("读取 about.md 失败", e);
   }

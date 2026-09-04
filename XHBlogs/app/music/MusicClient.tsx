@@ -10,7 +10,7 @@ export default function MusicClient() {
   const {
     playlist, currentSong, isPlaying, progress, currentTime, duration, currentLyric,
     isLoading, togglePlay, nextSong, prevSong, handleSeek,
-    playSong, selectSong,
+    playSong,
     playMode, togglePlayMode,
     volume, setVolume, isMuted, toggleMute
   } = useMusic();
@@ -97,11 +97,6 @@ export default function MusicClient() {
       case 'random': return <Shuffle size={18} className="text-slate-500 hover:text-indigo-500 md:w-5 md:h-5" />;
       default: return <Repeat size={18} className="text-slate-500 md:w-5 md:h-5" />;
     }
-  };
-
-  const handlePlaySong = (index: number) => {
-    if (typeof playSong === 'function') playSong(index);
-    else if (typeof selectSong === 'function') selectSong(index);
   };
 
   const filteredPlaylist = useMemo(() => {
@@ -245,7 +240,7 @@ export default function MusicClient() {
                           const originalIndex = playlist.findIndex((s: any) => s.id === song.id);
                           const isPlayingThis = (song.id === currentSong.id);
                           return (
-                            <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} key={song.id} onClick={() => handlePlaySong(originalIndex)} className={`group flex items-center justify-between p-3 md:p-4 rounded-xl md:rounded-2xl cursor-pointer transition-all border ${isPlayingThis ? 'bg-white/60 dark:bg-slate-700/80 shadow-md border-indigo-500/30' : 'border-transparent hover:bg-white/30 dark:hover:bg-slate-700/40'}`}>
+                            <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} key={song.id} onClick={() => playSong(originalIndex)} className={`group flex items-center justify-between p-3 md:p-4 rounded-xl md:rounded-2xl cursor-pointer transition-all border ${isPlayingThis ? 'bg-white/60 dark:bg-slate-700/80 shadow-md border-indigo-500/30' : 'border-transparent hover:bg-white/30 dark:hover:bg-slate-700/40'}`}>
                               <div className="flex items-center gap-3 md:gap-4 w-[85%]">
                                 <div className="relative w-10 h-10 md:w-12 md:h-12 shrink-0 rounded-lg md:rounded-xl overflow-hidden shadow-sm">
                                   <img src={song.cover || song.pic} alt="cover" className="w-full h-full object-cover" />

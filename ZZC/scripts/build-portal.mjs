@@ -1,6 +1,6 @@
 // 构建后合并脚本：把介绍页移入 /about/，把门户静态页放到根目录
 // 由 package.json 的 build 在 vite build 之后调用
-import { cpSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 function esc(s) {
