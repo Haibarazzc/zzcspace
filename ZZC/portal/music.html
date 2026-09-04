@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>音乐馆 · 曾子丞的个人空间</title>
+  <meta name="description" content="曾子丞在听的歌 —— 邓紫棋《唯一》。" />
+  <meta name="theme-color" content="#080a09" />
+  <link rel="icon" href="/favicon.png" type="image/png" />
+  <link rel="stylesheet" href="/portal.css" />
+</head>
+<body class="music-page">
+  <!-- 全屏模糊氛围背景（仿 MusicClient：歌曲封面 blur-50 铺满） -->
+  <div class="music-bg" aria-hidden="true">
+    <img src="https://p1.music.126.net/aJWtwvdYRXvKUpAE2C6NoA==/109951168919708423.jpg?param=300y300" alt="" />
+    <div class="music-bg-shade"></div>
+  </div>
+
+  <!-- 磨砂顶栏（Navbar） -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/">曾子丞</a>
+      <nav class="nav">
+        <a href="/">首页</a>
+        <a href="/blog/">博客</a>
+        <a href="/map/">地图</a>
+        <a href="/about/">介绍</a>
+        <a class="on" href="/music/">音乐</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="music-page-wrap">
+    <!-- 标题区 -->
+    <div class="music-head">
+      <h1>音乐馆</h1>
+      <p>在光与影的缝隙里，收藏声音的记忆。</p>
+    </div>
+
+    <!-- 双栏：左 控制台 / 右 歌词·歌单 -->
+    <div class="music-grid">
+      <!-- ====== 左：播放控制台 ====== -->
+      <section class="console-card">
+        <div class="disc-stage">
+          <div class="disc-glow"></div>
+          <div class="disc-ring">
+            <img class="disc-cover" src="https://p1.music.126.net/aJWtwvdYRXvKUpAE2C6NoA==/109951168919708423.jpg?param=750y750" alt="《唯一》专辑封面" referrerpolicy="no-referrer" crossorigin="anonymous" />
+            <div class="disc-sheen"></div>
+            <div class="disc-hole"></div>
+          </div>
+        </div>
+
+        <div class="song-meta">
+          <h2 class="song-title">唯一</h2>
+          <h3 class="song-artist">邓紫棋 G.E.M.</h3>
+        </div>
+
+        <div class="player-controls">
+          <div class="progress-row">
+            <input id="fakeProgress" type="range" min="0" max="100" value="0"
+              aria-label="播放进度" />
+            <div class="time-row"><span id="tCur">00:00</span><span id="tDur">--:--</span></div>
+          </div>
+          <div class="controls-row">
+            <button class="ctl side-ctl" disabled title="上一首">⏮</button>
+            <button id="bigPlay" class="ctl big-play" onclick="neteasePlay()" title="播放">▶</button>
+            <button class="ctl side-ctl" disabled title="下一首">⏭</button>
+            <span class="vol" title="音量在播放器内调节">🔊</span>
+          </div>
+        </div>
+        <audio id="mainAudio" src="/music/audio/wei-yi.m4a" preload="none"></audio>
+      </section>
+
+      <!-- ====== 右：歌词与歌单 ====== -->
+      <section class="panel-card">
+        <div class="tab-pill">
+          <button class="tab on" data-tab="lyrics" onclick="switchTab('lyrics')">歌词</button>
+          <button class="tab" data-tab="playlist" onclick="switchTab('playlist')">歌单</button>
+        </div>
+
+        <div id="tab-lyrics" class="tab-pane lyric-pane">
+          <div class="lyric-mask top"></div>
+          <div class="lyric-scroll">
+            <p class="lyric active">爱本来就是一种能力</p>
+            <p class="lyric">最难得的是永远保有爱的能力</p>
+            <p class="lyric">你就是我的唯一</p>
+            <p class="lyric lyric-dim">—— 《唯一》歌词节选 · 完整版请收听官方音源 ——</p>
+          </div>
+          <div class="lyric-mask bottom"></div>
+        </div>
+
+        <div id="tab-playlist" class="tab-pane playlist-pane" hidden>
+          <div class="playlist-item now">
+            <span class="pl-eq">▶</span>
+            <div><strong>唯一</strong><small>邓紫棋 G.E.M. · 单曲 · 2021</small></div>
+            <em onclick="neteasePlay()">播放</em>
+          </div>
+          <p class="playlist-more">更多歌曲，陆续上架。</p>
+        </div>
+      </section>
+    </div>
+
+    <footer class="portal-footer music-footer">
+      <a href="/">← 返回门户</a>
+      <span>·</span>
+      <a href="mailto:1071620178@qq.com">1071620178@qq.com</a>
+      <span>·</span>
+      <span>© 2026 曾子丞 / SHENZHEN</span>
+    </footer>
+  </main>
+
+  <script>
+    var mainAudio = document.getElementById('mainAudio');
+    var bigPlay = document.getElementById('bigPlay');
+    var progInput = document.getElementById('fakeProgress');
+    var tCur = document.getElementById('tCur');
+    var tDur = document.getElementById('tDur');
+
+    function fmt(t) {
+      if (!isFinite(t)) return '00:00';
+      var m = Math.floor(t / 60), s2 = Math.floor(t % 60);
+      return (m < 10 ? '0' : '') + m + ':' + (s2 < 10 ? '0' : '') + s2;
+    }
+
+    function neteasePlay() {
+      if (mainAudio.paused) {
+        mainAudio.play();
+      } else {
+        mainAudio.pause();
+      }
+    }
+
+    mainAudio.addEventListener('play', function () { bigPlay.textContent = '❚❚'; });
+    mainAudio.addEventListener('pause', function () { bigPlay.textContent = '▶'; });
+    mainAudio.addEventListener('loadedmetadata', function () { tDur.textContent = fmt(mainAudio.duration); });
+    mainAudio.addEventListener('timeupdate', function () {
+      tCur.textContent = fmt(mainAudio.currentTime);
+      var p = (mainAudio.currentTime / mainAudio.duration) * 100 || 0;
+      progInput.value = p;
+      progInput.style.background =
+        'linear-gradient(to right, #86b99a ' + p + '%, rgba(255,255,255,.16) ' + p + '%)';
+    });
+    // 拖动进度条跳转
+    progInput.addEventListener('input', function () {
+      var p = Number(this.value);
+      if (isFinite(mainAudio.duration) && mainAudio.duration > 0) {
+        mainAudio.currentTime = (p / 100) * mainAudio.duration;
+      }
+    });
+    mainAudio.addEventListener('ended', function () {
+      bigPlay.textContent = '▶';
+      progInput.value = 0;
+    });
+
+    // 歌词/歌单切换
+    function switchTab(name) {
+      document.getElementById('tab-lyrics').hidden = name !== 'lyrics';
+      document.getElementById('tab-playlist').hidden = name !== 'playlist';
+      document.querySelectorAll('.tab-pill .tab').forEach(function (b) {
+        b.classList.toggle('on', b.dataset.tab === name);
+      });
+    }
+  </script>
+</body>

@@ -1,0 +1,16 @@
+# 依赖与构建产物
+node_modules/
+out/
+.next/
+dist/
+deploy-site/
+.vercel/
+
+# IDE / 系统
+.idea/
+.DS_Store
+Thumbs.db
+
+# 本地部署包与临时文件
+*.zip
+*.tsbuildinfo

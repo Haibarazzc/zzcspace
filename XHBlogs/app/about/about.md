@@ -3,7 +3,7 @@ title: 关于我
 date: '2026-08-28'
 tags: []
 mood: ''
-cover: /bg-3.webp
+cover: /zzc-xhblogs-site/bg-3.webp
 description: 曾子丞 —— 数学、技术、摄影与持续探索。
 ---
 

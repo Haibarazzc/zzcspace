@@ -5,12 +5,19 @@ import { useState, useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, PanInfo } from 'framer-motion';
 import { siteConfig } from '../siteConfig';
+import { useTheme } from './ThemeProvider';
 
 export default function Navbar() {
   const [showNav, setShowNav] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  const { isDark, toggleTheme } = useTheme();
+  const [lang, setLang] = useState<'zh' | 'en'>('zh');
+  const NAV_NAMES: Record<'zh' | 'en', string[]> = {
+    zh: ['首页', '个人介绍', '杂谈', '照片墙', '音乐'],
+    en: ['Home', 'About', 'Chatter', 'Photos', 'Music'],
+  };
 
   // --- 🌟 物理引擎：菜单转动逻辑 ---
   const wheelRef = useRef<HTMLDivElement>(null);
@@ -70,17 +77,18 @@ export default function Navbar() {
 
   const navLinks = [
     { name: '首页', href: '/' },
-    { name: '个人介绍', href: '/portfolio/', external: true },
-    { name: '归档', href: '/timeline' },
+    { name: '个人介绍', href: '/portfolio/about/', external: true },
+    { name: '杂谈', href: '/chatter' },
     { name: '照片墙', href: '/photowall' },
     { name: '音乐', href: '/music' },
-    { name: '说说', href: '/moments' },
-    { name: '杂谈', href: '/chatter' },
-    { name: '关于', href: '/about' },
   ];
 
   // 🌟 核心：过滤掉“灵境”，专供手机端使用，保证圆盘自动重新均匀排布
   const mobileNavLinks = navLinks.filter(link => link.href !== '/tree');
+  const i18nNavLinks = navLinks.map((link, i) => ({
+    ...link,
+    name: NAV_NAMES[lang][i] ?? link.name,
+  }));
 
   return (
     <>
@@ -94,7 +102,7 @@ export default function Navbar() {
           </Link>
           <nav className="flex gap-8 text-sm font-bold">
             {/* PC端依然使用全量的 navLinks */}
-            {navLinks.map((link) => {
+            {i18nNavLinks.map((link) => {
               const isActive = pathname === link.href || pathname === `${link.href}/`;
               if ((link as any).external) {
                 return (
@@ -111,6 +119,21 @@ export default function Navbar() {
               );
             })}
           </nav>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={toggleTheme}
+              aria-label={isDark ? '切换到亮色模式' : '切换到暗色模式'}
+              className="w-9 h-9 rounded-full border border-white/30 dark:border-slate-600/60 bg-white/40 dark:bg-slate-800/50 backdrop-blur-md flex items-center justify-center transition-all duration-300 hover:scale-110"
+            >
+              {isDark ? '☀️' : '🌙'}
+            </button>
+            <button
+              onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')}
+              className="h-9 px-3 rounded-full border border-white/30 dark:border-slate-600/60 bg-white/40 dark:bg-slate-800/50 backdrop-blur-md text-xs font-black text-slate-700 dark:text-slate-200 transition-all duration-300 hover:scale-105"
+            >
+              {lang === 'zh' ? 'EN' : '中文'}
+            </button>
+          </div>
         </div>
       </header>
 

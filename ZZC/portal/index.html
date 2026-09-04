@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>曾子丞 · 个人空间</title>
+  <meta name="description" content="曾子丞的个人博客门户：自我介绍、校园地图、晚霞颜色实验室与博客文章。" />
+  <meta name="author" content="曾子丞" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="zh_CN" />
+  <meta property="og:title" content="曾子丞 · 个人空间" />
+  <meta property="og:description" content="自我介绍、校园地图与晚霞实验室的入口。" />
+  <meta property="og:image" content="/og-cover.jpg" />
+  <meta name="theme-color" content="#080a09" />
+  <link rel="icon" href="/favicon.png" type="image/png" />
+  <link rel="stylesheet" href="/portal.css?v=2" />
+</head>
+<body>
+  <!-- 全屏背景图 -->
+  <div class="hero-bg" aria-hidden="true">
+    <img src="/images/portal/site-bg.webp" alt="" />
+    <div class="hero-shade"></div>
+  </div>
+
+  <!-- 磨砂玻璃顶栏 -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="/">曾子丞</a>
+      <nav class="nav">
+        <a class="on" href="/" data-i18n="nav_home">首页</a>
+        <a href="/blog/" data-i18n="nav_blog">博客</a>
+        <a href="/map/" data-i18n="nav_map">地图</a>
+        <a href="/about/" data-i18n="nav_about">介绍</a>
+        <a href="/music/" data-i18n="nav_music">音乐</a>
+        <button id="langBtn" class="lang-btn" onclick="toggleLang()" aria-label="切换语言">EN</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="portal home-portal">
+    <!-- ====== 第一行：个人信息卡(7) + 歌曲播放器(5) ====== -->
+    <section class="row row-first">
+      <!-- 左：个人名片 -->
+      <div class="profile-card glass">
+        <img class="card-bg" src="/images/portal/card-profile.webp" alt="" aria-hidden="true" />
+        <div class="card-shade"></div>
+        <div class="pc-head">
+          <img class="avatar" src="/favicon.png" alt="" />
+          <div>
+            <h1 data-i18n="name">曾子丞</h1>
+            <p class="pc-role" data-i18n="role">SUSTech · 深圳</p>
+          </div>
+        </div>
+        <p class="bio" data-i18n="bio">在数学、技术与摄影之间持续探索的学生。</p>
+        <div class="stats">
+          <div class="stat"><strong data-posts-count>3</strong><span data-i18n="stat_posts">文章</span></div>
+          <span class="stat-sep"></span>
+          <div class="stat"><strong>42</strong><span data-i18n="stat_map">地标</span></div>
+          <span class="stat-sep"></span>
+          <div class="stat"><strong>6</strong><span data-i18n="stat_photos">照片</span></div>
+        </div>
+        <div class="profile-links">
+          <a href="/about/" data-i18n="pl_about">介绍 →</a>
+          <a href="/map/" data-i18n="pl_map">地图 →</a>
+          <a href="/blog/" data-i18n="pl_blog">博客 →</a>
+        </div>
+      </div>
+
+      <!-- 右：歌曲播放器（CloudPlayer 复刻） -->
+      <div class="cloud-player glass" id="playerCard">
+        <img class="card-bg" src="/images/portal/card-player.webp" alt="" aria-hidden="true" />
+        <div class="card-shade"></div>
+        <span class="card-tag">NOW ON REPEAT</span>
+        <div class="cp-head">
+          <div class="cp-disc-sm"><img src="https://p1.music.126.net/aJWtwvdYRXvKUpAE2C6NoA==/109951168919708423.jpg?param=200y200" alt="" referrerpolicy="no-referrer" /><i></i></div>
+          <div class="cp-meta">
+            <h2 class="cp-title">唯一</h2>
+            <p class="cp-artist">邓紫棋 G.E.M.</p>
+          </div>
+        </div>
+        <button id="cpPlay" class="cp-play" onclick="toggleAudio()" aria-label="播放《唯一》"><span data-i18n="play_btn">▶ 播放这首歌</span></button>
+        <p class="cp-note" data-i18n="play_note">LIVE 现场版 · 自托管音轨</p>
+
+        <!-- 自托管音轨 -->
+        <audio id="audioWeiYi" src="/music/audio/wei-yi.m4a" preload="none"></audio>
+      </div>
+    </section>
+
+    <!-- ====== 歌词栏（全宽滚动） ====== -->
+    <div class="lyric-bar" aria-hidden="true">
+      <p id="lyricText">爱本来就是一种能力，最难得的是永远保有爱的能力 —— 邓紫棋《唯一》</p>
+    </div>
+
+    <!-- ====== 第二行：最新文章(4) + 大海报(8) ====== -->
+    <section class="row row-second">
+      <div class="latest-list glass">
+        <img class="card-bg" src="/images/portal/card-blog.webp" alt="" aria-hidden="true" />
+        <div class="card-shade"></div>
+        <span class="card-tag">BLOG · LATEST</span>
+        <h2 class="sec-title" data-i18n="latest_title">最新文章</h2>
+        <!--LATEST_LIST-->
+        <a class="post-all" href="/blog/" data-i18n="all_posts">全部文章 →</a>
+      </div>
+
+      <div class="poster-col">
+        <a class="poster-map glass" href="/map/">
+          <img src="/images/portal/card-poster.webp" alt="" loading="lazy" />
+          <div class="poster-shade"></div>
+          <div class="poster-text">
+            <span class="card-tag">CAMPUS MAP</span>
+            <h2 data-i18n="map_title">校园地图</h2>
+            <p data-i18n="map_desc">南科大交互地图 · 可标注地点与备注</p>
+          </div>
+        </a>
+        <div class="duo-grid">
+          <a class="mini-card glass wide" href="/about/?lab=sunset">
+            <span class="card-tag">SUNSET LAB</span>
+            <h2 data-i18n="sunset_title">晚霞颜色实验室</h2>
+            <p data-i18n="sunset_desc">在线分析晚霞照片的颜色构成</p>
+            <span class="card-go" data-i18n="enter">进入 →</span>
+          </a>
+          <a class="mini-card glass" href="/about/">
+            <span class="card-tag">ABOUT</span>
+            <h2 data-i18n="about_title">关于我</h2>
+            <p data-i18n="about_desc">数学、技术、摄影</p>
+            <span class="card-go" data-i18n="enter2">进入 →</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <footer class="portal-footer">
+      <a href="mailto:1071620178@qq.com">1071620178@qq.com</a>
+      <span>·</span>
+      <a href="https://space.bilibili.com/3494376338623054" target="_blank" rel="noopener noreferrer" data-i18n="footer_bili">哔哩哔哩主页</a>
+      <span>·</span>
+      <span>© 2026 曾子丞 / SHENZHEN</span>
+    </footer>
+  </main>
+
+  <script>
+    // ===== 自托管音频播放 =====
+    var audio = document.getElementById('audioWeiYi');
+    function toggleAudio() {
+      if (!audio) return
+      if (audio.paused) {
+        audio.play();
+      } else {
+        audio.pause();
+      }
+    }
+    var PLAY_LBL, PAUSE_SYM = '❚❚';
+    audio.addEventListener('play', function () {
+      document.getElementById('cpPlay').innerHTML = '❚❚ 暂停';
+    });
+    audio.addEventListener('pause', function () {
+      document.getElementById('cpPlay').innerHTML = '▶ 继续播放';
+    });
+
+    // ===== 中英切换 =====
+    var I18N = {
+      zh: {
+        nav_home: '首页', nav_blog: '博客', nav_map: '地图', nav_about: '介绍', nav_music: '音乐',
+        name: '曾子丞',
+        role: 'SUSTech · 深圳',
+        bio: '在数学、技术与摄影之间持续探索的学生。',
+        stat_posts: '文章', stat_map: '地标', stat_photos: '照片',
+        pl_about: '介绍 →', pl_map: '地图 →', pl_blog: '博客 →',
+        play_btn: '▶ 播放这首歌', play_note: 'LIVE 现场版 · 点击播放',
+        open_netease: '在网易云音乐打开完整版 ↗',
+        latest_title: '最新文章',
+        all_posts: '全部文章 →',
+        map_title: '校园地图', map_desc: '南科大交互地图 · 可标注地点与备注',
+        sunset_title: '晚霞颜色实验室', sunset_desc: '在线分析晚霞照片的颜色构成',
+        about_title: '关于我', about_desc: '数学、技术、摄影',
+        enter: '进入 →', enter2: '进入 →',
+        footer_bili: '哔哩哔哩主页',
+        playing: '♪ 正在播放'
+      },
+      en: {
+        nav_home: 'Home', nav_blog: 'Blog', nav_map: 'Map', nav_about: 'About', nav_music: 'Music',
+        name: 'ZENG ZICHENG',
+        role: 'SUSTech · Shenzhen',
+        bio: 'A student exploring mathematics, technology and photography.',
+        stat_posts: 'POSTS', stat_map: 'LANDMARKS', stat_photos: 'PHOTOS',
+        pl_about: 'About →', pl_map: 'Map →', pl_blog: 'Blog →',
+        play_btn: '▶ Play this song', play_note: 'Live version · tap to play',
+        open_netease: 'Open full version on NetEase Music ↗',
+        latest_title: 'Latest Posts',
+        post_1: 'Why Companies Are All-In on AI Agents',
+        post_2: 'How Do AI Agents Actually Work?',
+        post_3: 'How This Site Was Made',
+        all_posts: 'All posts →',
+        map_title: 'Campus Map', map_desc: 'Interactive SUSTech map · add places & notes',
+        sunset_title: 'Sunset Color Lab', sunset_desc: 'Analyze the colors of a sunset photo, online',
+        about_title: 'About Me', about_desc: 'Math, technology, photography',
+        enter: 'Enter →', enter2: 'Enter →',
+        footer_bili: 'Bilibili',
+        playing: '♪ Now playing'
+      }
+    };
+    function lang() { return localStorage.getItem('portal-lang') || 'zh' }
+    function applyLang(l) {
+      document.documentElement.lang = l === 'en' ? 'en' : 'zh-CN';
+      document.querySelectorAll('[data-i18n]').forEach(function (el) {
+        var v = I18N[l][el.dataset.i18n];
+        if (v !== undefined) el.textContent = v;
+      });
+      var btn = document.getElementById('langBtn');
+      if (btn) btn.textContent = (l === 'zh' ? 'EN' : '中文');
+    }
+    function toggleLang() {
+      var l = lang() === 'zh' ? 'en' : 'zh';
+      localStorage.setItem('portal-lang', l);
+      applyLang(l);
+    }
+    applyLang(lang());
+    // 歌词栏文案随语言（简单处理）
+    if (lang() === 'en') {
+      var lt = document.getElementById('lyricText');
+      if (lt) lt.textContent = '"Love itself is an ability — the rarest one is to keep it." — G.E.M.《Unique》';
+    }
+    // 歌词轮换（双语各一句，跟随当前语言）
+    var lyricIdx = 0;
+    var lyricsZh = [
+      '爱本来就是一种能力，最难得的是永远保有爱的能力 —— 邓紫棋《唯一》',
+      '你就是我的唯一 —— 邓紫棋《唯一》'
+    ];
+    var lyricsEn = [
+      '"Love itself is an ability — the rarest is to keep it forever" — G.E.M.《Unique》',
+      '"You are my only one" — G.E.M.《Unique》'
+    ];
+    setInterval(function () {
+      var el = document.getElementById('lyricText');
+      if (!el) return;
+      var arr = lang() === 'en' ? lyricsEn : lyricsZh;
+      lyricIdx = (lyricIdx + 1) % arr.length;
+      el.style.opacity = 0;
+      setTimeout(function () { el.textContent = arr[lyricIdx]; el.style.opacity = .85; }, 600);
+    }, 8000);
+  </script>
+<script>
+  if (location.search.includes('noanim')) {
+    var st = document.createElement('style');
+    st.textContent = '*,*:before,*:after{animation:none!important;transition:none!important}';
+    document.head.appendChild(st);
+  }
+</script>
+</body>
+</html>

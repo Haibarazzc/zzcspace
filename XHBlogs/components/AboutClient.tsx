@@ -3,7 +3,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, MessageSquare, Sparkles, Activity } from 'lucide-react';
-import Comments from './Comments';
 import { siteConfig } from '../siteConfig';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
@@ -214,7 +213,6 @@ export default function AboutClient({
                 `}</style>
                 <div className="prose prose-slate dark:prose-invert prose-base md:prose-lg max-w-none text-slate-800 dark:text-slate-200 font-serif transition-colors duration-700 leading-relaxed scroll-smooth" dangerouslySetInnerHTML={{ __html: contentHtml }} />
               </div>
-              <div className="mt-12 md:mt-16"><Comments /></div>
             </motion.div>
           )}
 
@@ -348,7 +346,7 @@ export default function AboutClient({
                 })}
 
                 {activities.length === 0 && (
-                  <div className="text-slate-500 text-sm font-bold">源石数据库中暂无活动记录...</div>
+                  <div className="text-slate-500 text-sm font-bold">暂无活动记录...</div>
                 )}
               </div>
 

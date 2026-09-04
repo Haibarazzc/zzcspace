@@ -69,8 +69,10 @@ const LOCAL_PLAYLIST = [
     title: '唯一',
     artist: '邓紫棋 G.E.M.',
     cover: 'https://p1.music.126.net/aJWtwvdYRXvKUpAE2C6NoA==/109951168919708423.jpg?param=500y500',
-    src: 'https://raw.githubusercontent.com/Haibarazzc/zzc-xhblogs/main/wei-yi.m4a',
-    lyrics: [] as { time: number; text: string }[],
+    src: '/audio/wei-yi.m4a',
+    lyrics: [
+      { time: 0, text: '你真的懂唯一的定义' },
+    ],
   },
 ];
 
@@ -82,7 +84,7 @@ export function MusicProvider({ children }: { children: ReactNode }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [lyrics, setLyrics] = useState<{ time: number; text: string }[]>([]);
-  const [currentLyric, setCurrentLyric] = useState("正在连接高可用神经云端...");
+  const [currentLyric, setCurrentLyric] = useState("♪ 纯享音乐 ♪");
   const [isLoading, setIsLoading] = useState(true);
 
   // 🌟 2. 新增音量和播放模式状态
@@ -105,7 +107,13 @@ export function MusicProvider({ children }: { children: ReactNode }) {
     };
 
     if (siteConfig.cloudMusicIds?.length > 0) fetchMusicData();
-    else setIsLoading(false);
+    else {
+      // 无云歌单时直接用本地歌单（修复：之前只关 loading 不设 playlist → 空态）
+      setPlaylist(LOCAL_PLAYLIST);
+      setCurrentIndex(0);
+      setCurrentLyric("♪ 纯享音乐 ♪");
+      setIsLoading(false);
+    }
 
     return () => { isMounted = false; };
   }, []);

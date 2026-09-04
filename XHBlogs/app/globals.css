@@ -1,3 +1,63 @@
+
+/* ============ ZZC 配色体系覆盖（魔方介绍页同款双主题） ============ */
+/* 暗色主调：深墨绿底 + 鼠尾草绿点缀 */
+:root, .dark {
+  --color-slate-50:  #0a0c0b;
+  --color-slate-100: #0e1210;
+  --color-slate-200: #1a211d;
+  --color-slate-300: #2c352f;
+  --color-slate-400: #4c584f;
+  --color-slate-500: #6f7c73;
+  --color-slate-600: #93a398;
+  --color-slate-700: #b7c2ba;
+  --color-slate-800: #d5dcd6;
+  --color-slate-900: #eef1ee;
+  --color-slate-950: #f7f9f7;
+  --color-indigo-400: #86b99a;
+  --color-indigo-500: #6aa886;
+  --color-indigo-600: #4f8a6a;
+  --color-indigo-900: #1e3a2c;
+  --color-purple-400: #9ac9ad;
+  --color-purple-500: #86b99a;
+  --color-purple-600: #6aa886;
+  --color-purple-900: #1e3a2c;
+  --color-pink-400: #c3dccb;
+  --color-pink-500: #a8d8ba;
+  --color-pink-600: #86b99a;
+}
+.dark body { background: #070908; }
+body { background: #070908; }
+
+/* 亮色主调：天蓝白底 + 湖蓝点缀（ZZC data-theme=light 同款） */
+:root:not(.dark) {
+  --color-slate-50:  #E6F7FF;
+  --color-slate-100: #dff2ff;
+  --color-slate-200: #c9e7fa;
+  --color-slate-300: #a8d4f0;
+  --color-slate-400: #7aaac9;
+  --color-slate-500: #527795;
+  --color-slate-600: #3d6a8a;
+  --color-slate-700: #2c5472;
+  --color-slate-800: #1d4060;
+  --color-slate-900: #16324a;
+  --color-slate-950: #10283d;
+  --color-indigo-400: #388bd4;
+  --color-indigo-500: #2f7cc2;
+  --color-indigo-600: #2568a8;
+  --color-indigo-900: #163a5c;
+  --color-purple-400: #5f9ed6;
+  --color-purple-500: #4a8ec9;
+  --color-purple-600: #3a78b0;
+  --color-purple-900: #163a5c;
+  --color-pink-400: #5f9ed6;
+  --color-pink-500: #4a8ec9;
+  --color-pink-600: #3a78b0;
+}
+:root:not(.dark) body { background: #E6F7FF; color: #16324a; }
+
+/* 渐变光斑：暗绿/亮蓝 */
+:root, .dark { --zzc-blob-a: rgba(134,185,154,.30); --zzc-blob-b: rgba(84,110,93,.22); }
+:root:not(.dark) { --zzc-blob-a: rgba(137,194,255,.42); --zzc-blob-b: rgba(255,255,255,.55); }
 @import "tailwindcss";
 
 /* 1. 声明暗黑模式变体 */

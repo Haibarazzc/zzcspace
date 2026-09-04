@@ -42,7 +42,7 @@ function getDirActivities(dirName: string, typeLabel: '文章' | '杂谈' | '说
 export default async function AboutPage() {
   const fullPath = path.join(process.cwd(), 'app', 'about', 'about.md');
   let contentHtml = "博主很懒，还没有写自我介绍哦...";
-  let coverImage = "https://bu.dusays.com/2026/03/24/69c23dc278c78.jpg";
+  let coverImage = "/bg-1.webp";
 
   try {
     const fileContents = fs.readFileSync(fullPath, 'utf8');
@@ -93,7 +93,7 @@ export default async function AboutPage() {
 
   const posts = getDirActivities('posts', '文章', 'posts');
   const chatters = getDirActivities('chatters', '杂谈', 'chatter');
-  const moments = getDirActivities('moments', '说说', 'moments');
+  const moments = getDirActivities('moments', '杂谈', 'chatter');
 
   const allActivities = [...posts, ...chatters, ...moments].sort((a, b) => {
     return new Date(b.date).getTime() - new Date(a.date).getTime();

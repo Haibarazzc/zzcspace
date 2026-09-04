@@ -1,0 +1,22 @@
+node_modules
+dist
+.vercel
+*.local
+*.tsbuildinfo
+*-preview*.png
+seam-*.png
+hero-cube-qa.png
+card-back-source.jpg
+photos-originals/
+.deploy-staging*/
+
+# build artifacts & local deployment packages
+*.zip
+服务器部署包*/
+*.log
+
+# QA screenshots & logs
+.qa/
+taste-audit-*.png
+qa-achievements-*.png
+qa-journey-*.png
