@@ -2,6 +2,11 @@
   "cleanUrls": true,
   "redirects": [
     {
+      "source": "/map/",
+      "destination": "/portfolio/map/",
+      "permanent": true
+    },
+    {
       "source": "/map/:path*",
       "destination": "/portfolio/map/:path*",
       "permanent": true
