@@ -21,8 +21,9 @@ async function redisCmd(cmd: string, key: string, value?: string): Promise<unkno
     headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
     body: JSON.stringify(args),
   })
-  if (!resp.ok) return null
-  return (await resp.json())?.result ?? null
+  const data = await resp.json()
+  if (!resp.ok || data.error) throw new Error('Redis request failed')
+  return data?.result ?? null
 }
 
 export default async function handler(req: any, res: any) {
@@ -37,13 +38,24 @@ export default async function handler(req: any, res: any) {
 
   if (req.method === 'GET') {
     // 公开读：返回云端备注列表（无数据时 places 为 null）
-    const raw = await redisCmd('GET', REDIS_KEY)
-    ok(res, { places: typeof raw === 'string' ? JSON.parse(raw || 'null') : null })
+    try {
+      const raw = await redisCmd('GET', REDIS_KEY)
+      ok(res, { places: typeof raw === 'string' ? JSON.parse(raw || 'null') : null })
+    } catch {
+      ok(res, { error: 'cloud storage unavailable' }, 503)
+    }
     return
   }
 
   if (req.method === 'POST') {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body ?? {})
+    let body
+    try {
+      body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body ?? {})
+      if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('Invalid body')
+    } catch {
+      ok(res, { error: 'invalid JSON body' }, 400)
+      return
+    }
     const password = String(body.password ?? '')
     const adminPassword = process.env.MAP_ADMIN_PASSWORD
     // 未配置密码 → 锁定写入（只读模式）
@@ -57,14 +69,20 @@ export default async function handler(req: any, res: any) {
     }
     // 验证通过：body.places 存在则写入，否则仅校验（解锁用）
     if (body.places !== undefined) {
+      if (!Array.isArray(body.places)) {
+        ok(res, { error: 'places must be an array' }, 400)
+        return
+      }
       const places = JSON.stringify(body.places)
       if (places.length > 200_000) {
         ok(res, { error: 'payload too large' }, 413)
         return
       }
-      const setResult = await redisCmd('SET', REDIS_KEY, places)
-      if (setResult === null && !process.env.UPSTASH_REDIS_REST_URL) {
-        ok(res, { error: 'redis not configured' }, 503)
+      try {
+        const setResult = await redisCmd('SET', REDIS_KEY, places)
+        if (setResult !== 'OK') throw new Error('Save failed')
+      } catch {
+        ok(res, { error: 'cloud storage unavailable' }, 503)
         return
       }
       ok(res, { saved: true, places: body.places })

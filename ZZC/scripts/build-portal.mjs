@@ -22,6 +22,11 @@ if (!existsSync(join(dist, 'index.html'))) fail('vite 构建产物 dist/index.ht
 // 1. 介绍页移入 dist/about/
 mkdirSync(about, { recursive: true })
 renameSync(join(dist, 'index.html'), join(about, 'index.html'))
+// Vite 的相对公共资源路径需要随入口下移一层；分享卡片使用完整线上地址。
+const aboutEntry = join(about, 'index.html')
+writeFileSync(aboutEntry, readFileSync(aboutEntry, 'utf8')
+  .replace('href="./favicon.png"', 'href="../favicon.png"')
+  .replace(/content="(?:\.\/|\/)og-cover\.jpg"/g, 'content="https://zzcspace.com/portfolio/og-cover.jpg"'))
 if (existsSync(join(dist, 'assets'))) {
   renameSync(join(dist, 'assets'), join(about, 'assets'))
 }

@@ -2,6 +2,16 @@
   "cleanUrls": true,
   "redirects": [
     {
+      "source": "/blog/",
+      "destination": "/portfolio/blog/",
+      "permanent": true
+    },
+    {
+      "source": "/blog/:path*",
+      "destination": "/portfolio/blog/:path*",
+      "permanent": true
+    },
+    {
       "source": "/map/",
       "destination": "/portfolio/map/",
       "permanent": true

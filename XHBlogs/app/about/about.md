@@ -3,7 +3,7 @@ title: 关于我
 date: '2026-08-28'
 tags: []
 mood: ''
-cover: /zzc-xhblogs-site/bg-3.webp
+cover: /bg-3.webp
 description: 曾子丞 —— 数学、技术、摄影与持续探索。
 ---
 
@@ -23,9 +23,9 @@ description: 曾子丞 —— 数学、技术、摄影与持续探索。
 
 **🌟 站内其他入口**
 
-* [校园地图](/map) —— 南科大交互地图，42 个地标可标注地点与备注（点开看看食堂笔记）。
-* [晚霞颜色实验室](/about?lab=sunset) —— 在线分析晚霞照片的颜色构成。
-* [博客](/blog) —— 记录学习与探索的过程。
+* [校园地图](/portfolio/map/) —— 南科大交互地图，42 个地标可标注地点与备注（点开看看食堂笔记）。
+* [晚霞颜色实验室](/portfolio/about/?lab=sunset) —— 在线分析晚霞照片的颜色构成。
+* [博客](/portfolio/blog/) —— 记录学习与探索的过程。
 
 **联系我**
 

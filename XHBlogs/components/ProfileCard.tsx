@@ -1,6 +1,7 @@
 "use client";
 
 import { siteConfig } from '../siteConfig';
+import Link from 'next/link';
 
 export default function ProfileCard({ postCount, chatterCount, photoCount }: { postCount: number, chatterCount: number, photoCount: number }) {
 
@@ -36,6 +37,9 @@ export default function ProfileCard({ postCount, chatterCount, photoCount }: { p
           <div className="w-px h-8 md:h-10 bg-slate-300/50 dark:bg-slate-700 hidden md:block"></div>
           <StatItem count={photoCount} label="照片" color="text-pink-600 dark:text-pink-400" />
         </div>
+        <Link href="/about?tab=activity" className="shrink-0 rounded-md px-3 py-2 text-sm font-bold text-indigo-700 dark:text-indigo-300 hover:underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500">
+          研究动态
+        </Link>
       </div>
     </div>
   );

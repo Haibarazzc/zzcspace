@@ -50,9 +50,11 @@ function parsePost(file) {
 }
 
 function layout(title, inner, opts = {}) {
+  const blogBase = opts.cssBase || './'
+  const portalBase = blogBase + '../'
   const breadcrumb = opts.back === 'portal'
-    ? '<a href="/">← 返回门户</a>'
-    : '<a href="/">门户</a><span>/</span><a href="/blog/">博客</a>' + (opts.current ? '<span>/</span><span>' + esc(opts.current) + '</span>' : '')
+    ? `<a href="${portalBase}">← 返回门户</a>`
+    : `<a href="${portalBase}">门户</a><span>/</span><a href="${blogBase}">博客</a>` + (opts.current ? '<span>/</span><span>' + esc(opts.current) + '</span>' : '')
   return `<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -61,7 +63,7 @@ function layout(title, inner, opts = {}) {
   <title>${esc(title)} · 曾子丞的博客</title>
   <meta name="description" content="${esc(opts.desc || title)}" />
   <meta name="theme-color" content="#080a09" />
-  <link rel="icon" href="/favicon.png" type="image/png" />
+  <link rel="icon" href="${portalBase}favicon.png" type="image/png" />
   <link rel="stylesheet" href="${opts.cssBase || ''}blog.css" />
 </head>
 <body>
@@ -85,7 +87,7 @@ copyFileSync(blogCss, join(distBlog, 'blog.css'))
 
 // 列表页
 const listItems = posts.map((p) => `
-  <a class="post-card" href="/blog/${encodeURIComponent(p.slug)}/">
+  <a class="post-card" href="./${encodeURIComponent(p.slug)}/">
     <time>${esc(p.date)}</time>
     <h2>${esc(p.title)}</h2>
     ${p.summary ? `<p>${esc(p.summary)}</p>` : ''}
@@ -98,7 +100,7 @@ writeFileSync(join(distBlog, 'index.html'), layout('博客', `
     <div class="sub">记录学习与探索的过程。</div>
   </header>
   <div class="post-list">${listItems || '<p class="post-empty">还没有文章，敬请期待。</p>'}</div>
-`, { desc: '曾子丞的博客 —— 记录学习与探索的过程' }))
+`, { back: 'portal', desc: '曾子丞的博客 —— 记录学习与探索的过程' }))
 console.log('[build-blog] ✓ 列表页 dist/blog/index.html (' + posts.length + ' 篇)')
 
 // 文章页
@@ -121,8 +123,8 @@ writeFileSync(
   join(root, 'dist', 'blog-latest.json'),
   JSON.stringify({
     count: posts.length,
-    latest: posts.length ? { title: posts[0].title, date: posts[0].date, summary: posts[0].summary, url: '/blog/' + encodeURIComponent(posts[0].slug) + '/' } : null,
-    posts: posts.slice(0, 5).map((p) => ({ title: p.title, date: p.date, url: '/blog/' + encodeURIComponent(p.slug) + '/' })),
+    latest: posts.length ? { title: posts[0].title, date: posts[0].date, summary: posts[0].summary, url: './blog/' + encodeURIComponent(posts[0].slug) + '/' } : null,
+    posts: posts.slice(0, 5).map((p) => ({ title: p.title, date: p.date, url: './blog/' + encodeURIComponent(p.slug) + '/' })),
   }),
 )
 console.log('[build-blog] ✓ latest.json (count=' + posts.length + ')')
