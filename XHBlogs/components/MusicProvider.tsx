@@ -73,6 +73,16 @@ const LOCAL_PLAYLIST = [
       { time: 0, text: '你真的懂唯一的定义' },
     ],
   },
+  {
+    id: 'style-taylor-swift',
+    title: 'Style',
+    artist: 'Taylor Swift',
+    cover: '/images/style-taylor-swift.jpg',
+    src: '/audio/style-taylor-swift.mp3',
+    lyrics: [
+      { time: 0, text: 'We never go out of style' },
+    ],
+  },
 ];
 
 export function MusicProvider({ children }: { children: ReactNode }) {
