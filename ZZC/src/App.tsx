@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { ArrowDown, ArrowUpRight, Aperture, ChevronLeft, ChevronRight, CircleDot, Mail, Map, Moon, Mountain, Palette, Play, Route, Sun, Video, X } from 'lucide-react'
+import { ArrowDown, ArrowUpRight, Aperture, ChevronLeft, ChevronRight, CircleDot, Mail, Map, Moon, Mountain, Palette, Pause, Play, Route, Sun, Video, X } from 'lucide-react'
 import { profile } from './data/profile'
 import { translations, type Language } from './data/translations'
 import SpecularButton from './components/SpecularButton'
@@ -93,12 +93,38 @@ function InterestCard({kind,label,title,text,onOpen}:{kind:keyof typeof interest
   const visual=kind==='go'?<div className="go-board"><i/><i/></div>:kind==='hiking'?<div className="mountain-mark"><Mountain/></div>:kind==='cycling'?<div className="cycle-mark"><Route/></div>:<div className="mini-cube-mark">{Array.from({length:9},(_,i)=><i key={i}/>)}</div>
   return <article className="old-interest-card interest-playing-card" role="button" tabIndex={0} onClick={onOpen} onKeyDown={e=>{if(e.key==='Enter')onOpen()}}><div className="interest-card-inner"><div className="interest-card-front"><div className="interest-visual">{visual}</div><span>{label}</span><h3>{title}</h3><p>{text}</p></div><div className="interest-card-back" aria-hidden="true"><img className="card-back-emblem" src="./assets/kid-emblem-cutout.webp" alt=""/><span>探索</span><small>逻辑 / 运动 / 自然</small></div></div></article>
 }
+
+function StylePlayer({onClose}:{onClose:()=>void}) {
+  const audio=useRef<HTMLAudioElement>(null)
+  const [playing,setPlaying]=useState(false)
+  const [currentTime,setCurrentTime]=useState(0)
+  const [duration,setDuration]=useState(0)
+  const formatTime=(time:number)=>`${Math.floor(time/60)}:${String(Math.floor(time%60)).padStart(2,'0')}`
+  const toggle=()=>{
+    if(!audio.current)return
+    if(playing)audio.current.pause()
+    else audio.current.play().catch(()=>setPlaying(false))
+    setPlaying(!playing)
+  }
+  useEffect(()=>()=>audio.current?.pause(),[])
+  return <motion.div className="style-player-modal" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} role="dialog" aria-modal="true" aria-label="Style 播放器" onClick={onClose}>
+    <motion.section initial={{y:20,scale:.98,opacity:0}} animate={{y:0,scale:1,opacity:1}} exit={{y:14,opacity:0}} onClick={event=>event.stopPropagation()}>
+      <button className="style-player-close" onClick={onClose} aria-label="关闭 Style 播放器"><X size={18}/></button>
+      <img src="../music/style-taylor-swift.jpg" alt="Style - Taylor Swift 专辑封面"/>
+      <div className="style-player-copy"><span>NOW PLAYING</span><h2>Style</h2><p>Taylor Swift</p><blockquote>We never go out of style</blockquote></div>
+      <div className="style-player-controls"><input aria-label="播放进度" type="range" min="0" max={duration||1} value={currentTime} onChange={event=>{const value=Number(event.target.value);if(audio.current)audio.current.currentTime=value;setCurrentTime(value)}}/><div><small>{formatTime(currentTime)}</small><button onClick={toggle} aria-label={playing?'暂停':'播放'}>{playing?<Pause size={18}/>:<Play size={18} fill="currentColor"/>}</button><small>{formatTime(duration)}</small></div></div>
+      <audio ref={audio} src="../music/audio/style-taylor-swift.mp3" onLoadedMetadata={event=>setDuration(event.currentTarget.duration)} onTimeUpdate={event=>setCurrentTime(event.currentTarget.currentTime)} onEnded={()=>setPlaying(false)}/>
+    </motion.section>
+  </motion.div>
+}
+
 function App() {
   const gallery=useRef<HTMLDivElement>(null)
   const track=useRef<HTMLDivElement>(null)
   const [menu,setMenu]=useState(false)
   const [activePhoto,setActivePhoto]=useState<number | null>(null)
   const [activeInterest,setActiveInterest]=useState<keyof typeof interestDetails | null>(null)
+  const [stylePlayerOpen,setStylePlayerOpen]=useState(false)
   const [language,setLanguage]=useState<Language>(()=>(localStorage.getItem('portfolio-language-v2') as Language)||'en')
   const [theme,setTheme]=useState<Theme>(()=>localStorage.getItem('portfolio-theme-v2')==='light'?'light':'dark')
   const [sunsetLab,setSunsetLab]=useState(()=>new URLSearchParams(location.search).get('lab')==='sunset')
@@ -199,7 +225,9 @@ function App() {
     <IntroOverlay/>
     <ReadingProgress/>
     <div className="site-atmosphere" aria-hidden="true"/><div className="cursor-glow"/>
-    <header className="nav"><div className="nav-left"><a className="back-home" href="https://zzcspace.com/" aria-label="返回 zzcspace 主页" title="zzcspace.com">{language==='zh'?'← 返回主页':'← Back Home'}</a><a href="#top" className="brand"><CircleDot size={16}/> EXPLORATION / 2026</a></div><div className="nav-controls"><button className="theme-switch" onClick={()=>setTheme(theme==='dark'?'light':'dark')} aria-label={theme==='dark'?'Switch to daylight mode':'Switch to night mode'} aria-pressed={theme==='light'} title={theme==='dark'?'Daylight mode':'Night mode'}><span className="theme-switch-track"><Sun size={13}/><Moon size={13}/><i/></span></button><button className="language-switch" onClick={()=>setLanguage(language==='zh'?'en':'zh')} aria-label={language==='zh'?'Switch to English':'切换到中文'}>{language==='zh'?'EN':'中文'}</button></div><button className="menu-btn" onClick={()=>setMenu(!menu)} aria-label="切换导航">{menu?'CLOSE':'INDEX'}</button><nav className={menu?'open':''}>{[['about','关于'],['journey','旅程'],['academic','学术'],['photography','摄影'],['beyond','兴趣']].map(([id,label])=><a key={id} href={`#${id}`} onClick={()=>setMenu(false)}>{label}</a>)}</nav></header>
+    <header className="nav"><div className="nav-left"><a className="back-home" href="https://zzcspace.com/" aria-label="返回 zzcspace 主页" title="zzcspace.com">{language==='zh'?'← 返回主页':'← Back Home'}</a><a href="#top" className="brand"><CircleDot size={16}/> EXPLORATION / 2026</a></div><div className="nav-controls"><button className="theme-switch" onClick={()=>setTheme(theme==='dark'?'light':'dark')} aria-label={theme==='dark'?'Switch to daylight mode':'Switch to night mode'} aria-pressed={theme==='light'} title={theme==='dark'?'Daylight mode':'Night mode'}><span className="theme-switch-track"><Sun size={13}/><Moon size={13}/><i/></span></button><button className="language-switch" onClick={()=>setLanguage(language==='zh'?'en':'zh')} aria-label={language==='zh'?'Switch to English':'切换到中文'}>{language==='zh'?'EN':'中文'}</button></div><button className="menu-btn" onClick={()=>setMenu(!menu)} aria-label="切换导航">{menu?'CLOSE':'INDEX'}</button><nav className={menu?'open':''}>{[['about','关于'],['journey','旅程'],['academic','学术'],['photography','摄影'],['beyond','兴趣']].map(([id,label])=><a key={id} href={`#${id}`} onClick={()=>setMenu(false)}>{label}</a>)}<button className="nav-style" onClick={()=>{setStylePlayerOpen(true);setMenu(false)}}><Play size={12} fill="currentColor"/> Style</button></nav></header>
+
+    {stylePlayerOpen&&<StylePlayer onClose={()=>setStylePlayerOpen(false)}/>}
 
     <section className="hero old-hero section" id="top">
       <div className="hero-volumes" aria-hidden="true"><i/><i/><i/></div><div className="hero-curves" aria-hidden="true"><i/><i/><i/></div><div className="hero-math-grid" aria-hidden="true"/>
