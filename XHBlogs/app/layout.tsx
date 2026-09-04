@@ -40,7 +40,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html: `
-              #app-mount-root { opacity: 0; visibility: hidden; pointer-events: none; }
+              html.splash-pending { overflow: hidden; background: #e8e7de; }
+              html.splash-pending body { background: #e8e7de; }
+              html.splash-pending #app-mount-root { opacity: 0; visibility: hidden; pointer-events: none; }
               html.splash-seen #app-mount-root { opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; }
             `
           }}
@@ -49,20 +51,27 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html: `
-              try {
-                if (sessionStorage.getItem('hasSeenSplash') === 'true') {
-                  document.documentElement.classList.add('splash-seen');
+              (() => {
+                let seen = false;
+                try { seen = sessionStorage.getItem('hasSeenSplash') === 'true'; } catch (e) {}
+                const root = document.documentElement;
+                if (seen || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                  root.classList.add('splash-seen');
+                } else {
+                  root.classList.add('splash-pending');
+                  // Reveal the content even if hydration fails.
+                  setTimeout(() => root.classList.remove('splash-pending'), 6500);
                 }
-              } catch (e) {}
+              })();
             `
           }}
         />
       </head>
 
       <body className="w-screen overflow-x-hidden min-h-full flex flex-col relative transition-colors duration-1000 bg-slate-50 dark:bg-slate-950 font-serif">
-        <ThemeProvider>
+        <SplashScreen />
 
-          <SplashScreen />
+        <ThemeProvider>
 
           <MusicProvider>
             <div id="app-mount-root" className="flex-1 flex flex-col transition-opacity duration-1000">
