@@ -28,3 +28,12 @@ export const albums: Album[] = [
     ]
   }
 ]
+
+export const ungroupedPhotos: Photo[] = [
+  { "url": "/photos/moments-01.jpg", "caption": "光影瞬间 / 07" },
+  { "url": "/photos/moments-02.jpg", "caption": "光影瞬间 / 08" },
+  { "url": "/photos/moments-03.jpg", "caption": "光影瞬间 / 09" },
+  { "url": "/photos/moments-04.jpg", "caption": "光影瞬间 / 10" },
+  { "url": "/photos/moments-05.jpg", "caption": "光影瞬间 / 11" },
+  { "url": "/photos/moments-06.jpg", "caption": "光影瞬间 / 12" }
+]

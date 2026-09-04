@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import Navbar from '../../components/Navbar';
 import PageTransition from '../../components/PageTransition';
-import { albums, Album } from '../../data/albums';
+import { albums, Album, ungroupedPhotos } from '../../data/albums';
 
 export default function PhotoWallClient() {
   const [currentAlbum, setCurrentAlbum] = useState<Album | null>(null);
@@ -34,7 +34,7 @@ export default function PhotoWallClient() {
 
     const matchedPhotos = albums.flatMap(album =>
       album.photos.map(p => ({ ...p, albumName: album.title }))
-    ).filter(photo => photo.caption?.toLowerCase().includes(activeQuery));
+    ).concat(ungroupedPhotos.map(photo => ({ ...photo, albumName: '新加入的瞬间' }))).filter(photo => photo.caption?.toLowerCase().includes(activeQuery));
 
     return { matchedAlbums, matchedPhotos };
   }, [activeQuery]);
@@ -99,6 +99,26 @@ export default function PhotoWallClient() {
                     <span className="w-2 h-6 bg-purple-500 rounded-full"></span>
                     相关相册 ({matchedAlbums.length})
                   </h3>
+                )}
+
+                {!activeQuery && ungroupedPhotos.length > 0 && (
+                  <div className="mb-16">
+                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">新加入的瞬间</h2>
+                    <div className="columns-1 sm:columns-2 md:columns-3 gap-6 space-y-6">
+                      {ungroupedPhotos.map((photo) => (
+                        <div
+                          key={photo.url}
+                          onClick={() => setSelectedImage(photo)}
+                          className="break-inside-avoid relative group rounded-2xl overflow-hidden cursor-zoom-in shadow-lg bg-white/20 dark:bg-slate-800/20 border border-white/30 dark:border-white/10 transition-transform duration-500 hover:scale-[1.02] hover:shadow-2xl hover:shadow-indigo-500/20"
+                        >
+                          <img src={photo.url} alt={photo.caption || '照片'} className="w-full h-auto object-cover transform transition-transform duration-700 group-hover:scale-105" loading="lazy" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex items-end p-5">
+                            <p className="text-white font-medium text-sm drop-shadow-md translate-y-4 group-hover:translate-y-0 transition-transform duration-500">{photo.caption}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-20 mt-10">
