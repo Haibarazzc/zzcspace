@@ -1,5 +1,6 @@
 // Run after both site builds. Keep the API functions alongside the static site.
-import { cpSync, copyFileSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs'
+import { cpSync, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { stripTypeScriptTypes } from 'node:module'
 import { dirname, join, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -23,7 +24,14 @@ for (const name of readdirSync(output)) {
 }
 cpSync(blog, output, { recursive: true, filter: source => source !== join(blog, 'portfolio') })
 cpSync(portfolio, join(output, 'portfolio'), { recursive: true })
-cpSync(api, join(output, 'api'), { recursive: true })
+// These handlers need no packages. Ship executable JavaScript so Vercel does not
+// have to type-check TypeScript outside the source project's development setup.
+mkdirSync(join(output, 'api'))
+for (const name of ['map-notes', 'track', 'logs']) {
+  writeFileSync(join(output, 'api', name + '.js'),
+    stripTypeScriptTypes(readFileSync(join(api, name + '.ts'), 'utf8')))
+}
+writeFileSync(join(output, 'package.json'), JSON.stringify({ private: true, type: 'module' }))
 copyFileSync(join(root, 'XHBlogs', 'vercel.json'), join(output, 'vercel.json'))
 
 // Next 16 on Windows exports nested segment files with backslashes. The browser
