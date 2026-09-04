@@ -56,6 +56,7 @@ indexHtml = indexHtml
   .replace(/__LATEST_URL__/g, '/blog/')
   .replace(/__LATEST_TITLE__/g, '博客文章')
   .replace(/__LATEST_SUMMARY__/g, '记录学习与探索的过程')
+  .replace(/(href|src)="\/(?!\/)/g, '$1="./')
 writeFileSync(join(dist, 'index.html'), indexHtml)
 cpSync(join(portal, 'portal.css'), join(dist, 'portal.css'))
 

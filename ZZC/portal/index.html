@@ -12,26 +12,26 @@
   <meta property="og:description" content="自我介绍、校园地图与晚霞实验室的入口。" />
   <meta property="og:image" content="/og-cover.jpg" />
   <meta name="theme-color" content="#080a09" />
-  <link rel="icon" href="/favicon.png" type="image/png" />
-  <link rel="stylesheet" href="/portal.css?v=2" />
+  <link rel="icon" href="./favicon.png" type="image/png" />
+  <link rel="stylesheet" href="./portal.css?v=2" />
 </head>
 <body>
   <!-- 全屏背景图 -->
   <div class="hero-bg" aria-hidden="true">
-    <img src="/images/portal/site-bg.webp" alt="" />
+    <img src="./images/portal/site-bg.webp" alt="" />
     <div class="hero-shade"></div>
   </div>
 
   <!-- 磨砂玻璃顶栏 -->
   <header class="topbar">
     <div class="topbar-inner">
-      <a class="brand" href="/">曾子丞</a>
+      <a class="brand" href="./">曾子丞</a>
       <nav class="nav">
-        <a class="on" href="/" data-i18n="nav_home">首页</a>
-        <a href="/blog/" data-i18n="nav_blog">博客</a>
-        <a href="/map/" data-i18n="nav_map">地图</a>
-        <a href="/about/" data-i18n="nav_about">介绍</a>
-        <a href="/music/" data-i18n="nav_music">音乐</a>
+        <a class="on" href="./" data-i18n="nav_home">首页</a>
+        <a href="./blog/" data-i18n="nav_blog">博客</a>
+        <a href="./map/" data-i18n="nav_map">地图</a>
+        <a href="./about/" data-i18n="nav_about">介绍</a>
+        <a href="./music/" data-i18n="nav_music">音乐</a>
         <button id="langBtn" class="lang-btn" onclick="toggleLang()" aria-label="切换语言">EN</button>
       </nav>
     </div>
@@ -42,10 +42,10 @@
     <section class="row row-first">
       <!-- 左：个人名片 -->
       <div class="profile-card glass">
-        <img class="card-bg" src="/images/portal/card-profile.webp" alt="" aria-hidden="true" />
+        <img class="card-bg" src="./images/portal/card-profile.webp" alt="" aria-hidden="true" />
         <div class="card-shade"></div>
         <div class="pc-head">
-          <img class="avatar" src="/favicon.png" alt="" />
+          <img class="avatar" src="./favicon.png" alt="" />
           <div>
             <h1 data-i18n="name">曾子丞</h1>
             <p class="pc-role" data-i18n="role">SUSTech · 深圳</p>
@@ -60,15 +60,15 @@
           <div class="stat"><strong>6</strong><span data-i18n="stat_photos">照片</span></div>
         </div>
         <div class="profile-links">
-          <a href="/about/" data-i18n="pl_about">介绍 →</a>
-          <a href="/map/" data-i18n="pl_map">地图 →</a>
-          <a href="/blog/" data-i18n="pl_blog">博客 →</a>
+          <a href="./about/" data-i18n="pl_about">介绍 →</a>
+          <a href="./map/" data-i18n="pl_map">地图 →</a>
+          <a href="./blog/" data-i18n="pl_blog">博客 →</a>
         </div>
       </div>
 
       <!-- 右：歌曲播放器（CloudPlayer 复刻） -->
       <div class="cloud-player glass" id="playerCard">
-        <img class="card-bg" src="/images/portal/card-player.webp" alt="" aria-hidden="true" />
+        <img class="card-bg" src="./images/portal/card-player.webp" alt="" aria-hidden="true" />
         <div class="card-shade"></div>
         <span class="card-tag">NOW ON REPEAT</span>
         <div class="cp-head">
@@ -82,7 +82,7 @@
         <p class="cp-note" data-i18n="play_note">LIVE 现场版 · 自托管音轨</p>
 
         <!-- 自托管音轨 -->
-        <audio id="audioWeiYi" src="/music/audio/wei-yi.m4a" preload="none"></audio>
+        <audio id="audioWeiYi" src="./music/audio/wei-yi.m4a" preload="none"></audio>
       </div>
     </section>
 
@@ -94,17 +94,17 @@
     <!-- ====== 第二行：最新文章(4) + 大海报(8) ====== -->
     <section class="row row-second">
       <div class="latest-list glass">
-        <img class="card-bg" src="/images/portal/card-blog.webp" alt="" aria-hidden="true" />
+        <img class="card-bg" src="./images/portal/card-blog.webp" alt="" aria-hidden="true" />
         <div class="card-shade"></div>
         <span class="card-tag">BLOG · LATEST</span>
         <h2 class="sec-title" data-i18n="latest_title">最新文章</h2>
         <!--LATEST_LIST-->
-        <a class="post-all" href="/blog/" data-i18n="all_posts">全部文章 →</a>
+        <a class="post-all" href="./blog/" data-i18n="all_posts">全部文章 →</a>
       </div>
 
       <div class="poster-col">
-        <a class="poster-map glass" href="/map/">
-          <img src="/images/portal/card-poster.webp" alt="" loading="lazy" />
+        <a class="poster-map glass" href="./map/">
+          <img src="./images/portal/card-poster.webp" alt="" loading="lazy" />
           <div class="poster-shade"></div>
           <div class="poster-text">
             <span class="card-tag">CAMPUS MAP</span>
@@ -113,13 +113,13 @@
           </div>
         </a>
         <div class="duo-grid">
-          <a class="mini-card glass wide" href="/about/?lab=sunset">
+          <a class="mini-card glass wide" href="./about/?lab=sunset">
             <span class="card-tag">SUNSET LAB</span>
             <h2 data-i18n="sunset_title">晚霞颜色实验室</h2>
             <p data-i18n="sunset_desc">在线分析晚霞照片的颜色构成</p>
             <span class="card-go" data-i18n="enter">进入 →</span>
           </a>
-          <a class="mini-card glass" href="/about/">
+          <a class="mini-card glass" href="./about/">
             <span class="card-tag">ABOUT</span>
             <h2 data-i18n="about_title">关于我</h2>
             <p data-i18n="about_desc">数学、技术、摄影</p>

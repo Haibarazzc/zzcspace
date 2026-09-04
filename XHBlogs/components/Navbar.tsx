@@ -15,8 +15,8 @@ export default function Navbar() {
   const { isDark, toggleTheme } = useTheme();
   const [lang, setLang] = useState<'zh' | 'en'>('zh');
   const NAV_NAMES: Record<'zh' | 'en', string[]> = {
-    zh: ['首页', '个人介绍', '杂谈', '照片墙', '音乐'],
-    en: ['Home', 'About', 'Chatter', 'Photos', 'Music'],
+    zh: ['首页', '个人介绍', '杂谈', '照片墙', '音乐', '校园地图'],
+    en: ['Home', 'About', 'Chatter', 'Photos', 'Music', 'Campus map'],
   };
 
   // --- 🌟 物理引擎：菜单转动逻辑 ---
@@ -81,6 +81,7 @@ export default function Navbar() {
     { name: '杂谈', href: '/chatter' },
     { name: '照片墙', href: '/photowall' },
     { name: '音乐', href: '/music' },
+    { name: '校园地图', href: '/portfolio/map/', external: true },
   ];
 
   // 🌟 核心：过滤掉“灵境”，专供手机端使用，保证圆盘自动重新均匀排布
@@ -100,7 +101,7 @@ export default function Navbar() {
             <span className="text-indigo-500 mx-1">{siteConfig.navSuffix || 'の'}</span>
             {siteConfig.navAfter || '宝藏之地'}
           </Link>
-          <nav className="flex gap-8 text-sm font-bold">
+          <nav className="flex gap-4 lg:gap-8 text-sm font-bold">
             {/* PC端依然使用全量的 navLinks */}
             {i18nNavLinks.map((link) => {
               const isActive = pathname === link.href || pathname === `${link.href}/`;
