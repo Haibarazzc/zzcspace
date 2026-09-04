@@ -93,6 +93,26 @@ const LOCAL_PLAYLIST = [
       { time: 0, text: 'I am dancing on my own' },
     ],
   },
+  {
+    id: 'lights-ellie-goulding',
+    title: 'Lights',
+    artist: 'Ellie Goulding',
+    cover: '/images/lights-ellie-goulding.jpg',
+    src: '/audio/lights-ellie-goulding.mp3',
+    lyrics: [
+      { time: 0, text: 'You show the lights that stop me turn to stone' },
+    ],
+  },
+  {
+    id: 'running-up-that-hill-meg-myers',
+    title: 'Running Up That Hill',
+    artist: 'Meg Myers',
+    cover: '/images/running-up-that-hill-meg-myers.jpg',
+    src: '/audio/running-up-that-hill-meg-myers.mp3',
+    lyrics: [
+      { time: 0, text: "If I only could, I'd make a deal with God" },
+    ],
+  },
 ];
 
 export function MusicProvider({ children }: { children: ReactNode }) {
