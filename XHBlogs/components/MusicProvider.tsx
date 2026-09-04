@@ -64,6 +64,16 @@ const MusicContext = createContext<MusicContextType | null>(null);
 // 自托管歌单：本地音频文件（不依赖网易云 VIP 接口）
 const LOCAL_PLAYLIST = [
   {
+    id: 'style-taylor-swift',
+    title: 'Style',
+    artist: 'Taylor Swift',
+    cover: '/images/style-taylor-swift.jpg',
+    src: '/audio/style-taylor-swift.mp3',
+    lyrics: [
+      { time: 0, text: 'We never go out of style' },
+    ],
+  },
+  {
     id: 'wei-yi-local',
     title: '唯一',
     artist: '邓紫棋 G.E.M.',
@@ -74,13 +84,13 @@ const LOCAL_PLAYLIST = [
     ],
   },
   {
-    id: 'style-taylor-swift',
-    title: 'Style',
+    id: 'shake-it-off-taylor-swift',
+    title: 'Shake It Off',
     artist: 'Taylor Swift',
-    cover: '/images/style-taylor-swift.jpg',
-    src: '/audio/style-taylor-swift.mp3',
+    cover: '/images/shake-it-off-taylor-swift.jpg',
+    src: '/audio/shake-it-off-taylor-swift.mp3',
     lyrics: [
-      { time: 0, text: 'We never go out of style' },
+      { time: 0, text: 'I am dancing on my own' },
     ],
   },
 ];
