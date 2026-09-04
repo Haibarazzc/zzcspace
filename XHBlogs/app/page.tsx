@@ -7,7 +7,6 @@ import PageTransition from '../components/PageTransition';
 import SearchBar from '../components/SearchBar';
 import { siteConfig } from '../siteConfig';
 import CloudPlayer from '../components/CloudPlayer';
-import ThemeToggleBlock from '../components/ThemeToggleBlock';
 import ProfileCard from '../components/ProfileCard';
 import { photoWallPhotos } from '../data/albums';
 import LyricBar from '../components/LyricBar';
@@ -124,14 +123,10 @@ export default function Home() {
                   {/* 照片墙大海报 */}
                   <PhotoWallCarousel />
 
-                  {/* 底层网格：说说轮播 + 主题切换器 */}
-                  {/* 手机上单列，平板上分3列比例分布 */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 w-full flex-1">
-                    <div className="sm:col-span-2 flex flex-col min-h-[200px]">
+                  {/* 底层网格：说说轮播 */}
+                  <div className="grid grid-cols-1 gap-6 w-full flex-1">
+                    <div className="flex flex-col min-h-[200px]">
                       <LatestChatterCarousel chatters={top5Chatters} />
-                    </div>
-                    <div className="sm:col-span-1 flex flex-col min-h-[120px]">
-                      <ThemeToggleBlock />
                     </div>
                   </div>
 
