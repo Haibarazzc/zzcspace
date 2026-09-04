@@ -9,7 +9,7 @@ import { siteConfig } from '../siteConfig';
 import CloudPlayer from '../components/CloudPlayer';
 import ThemeToggleBlock from '../components/ThemeToggleBlock';
 import ProfileCard from '../components/ProfileCard';
-import { albums, ungroupedPhotos } from '../data/albums';
+import { photoWallPhotos } from '../data/albums';
 import LyricBar from '../components/LyricBar';
 import { ToastProvider } from '../components/ToastProvider';
 
@@ -82,7 +82,7 @@ export default function Home() {
   const top5Chatters = allChatters.length > 0 ? allChatters.slice(0, 5) : [{ slug: 'none', title: '暂无记录', description: '记录一段思绪...', cover: '', date: '', formattedDate: '' }];
 
   const chatterCount = allChatters.length;
-  const realPhotoCount = albums.reduce((total, album) => total + album.photos.length, 0) + ungroupedPhotos.length;
+  const realPhotoCount = photoWallPhotos.length;
 
   return (
     <ToastProvider>

@@ -561,6 +561,8 @@ html,body,.site-atmosphere,.nav,.old-section,.gallery-wrap,footer{transition:bac
 }
 :root[data-theme='light'] .mbti-card h3 { color: #193c58 }
 :root[data-theme='light'] .mbti-card p { color: #527795 }
+:root[data-theme='light'] .old-about-copy strong,
+:root[data-theme='light'] .old-hero h1 .accent { color: #193c58 !important }
 /* 返回主页胶囊链接（置于顶部导航栏左侧） */
 .nav-left{display:flex;align-items:center;gap:18px}
 .back-home{display:flex;align-items:center;gap:6px;padding:7px 13px;border:1px solid var(--line);border-radius:999px;background:rgba(255,255,255,.025);color:#9aa1ae;font:9px ui-monospace,monospace;letter-spacing:.12em;white-space:nowrap;cursor:pointer;transition:.3s}

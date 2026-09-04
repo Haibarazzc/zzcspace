@@ -100,7 +100,7 @@ function App() {
   const [activePhoto,setActivePhoto]=useState<number | null>(null)
   const [activeInterest,setActiveInterest]=useState<keyof typeof interestDetails | null>(null)
   const [language,setLanguage]=useState<Language>(()=>(localStorage.getItem('portfolio-language-v2') as Language)||'en')
-  const [theme,setTheme]=useState<Theme>(()=>localStorage.getItem('portfolio-theme-v2')==='dark'?'dark':'light')
+  const [theme,setTheme]=useState<Theme>(()=>localStorage.getItem('portfolio-theme-v2')==='light'?'light':'dark')
   const [sunsetLab,setSunsetLab]=useState(()=>new URLSearchParams(location.search).get('lab')==='sunset')
   useEffect(()=>{
     document.documentElement.dataset.theme=theme

@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import Navbar from "../../components/Navbar";
 import PageTransition from "../../components/PageTransition";
-import { albums, ungroupedPhotos } from "../../data/albums";
+import { photoWallPhotos } from "../../data/albums";
 
-const photos = albums.flatMap((album) => album.photos).concat(ungroupedPhotos);
+const photos = photoWallPhotos;
 
 export default function PhotoWallClient() {
   const [selectedImage, setSelectedImage] = useState<{ url: string; caption?: string } | null>(null);

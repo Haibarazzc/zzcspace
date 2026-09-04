@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { albums, ungroupedPhotos } from "../data/albums";
+import { photoWallPhotos } from "../data/albums";
 
-const photos = albums.flatMap((album) => album.photos).concat(ungroupedPhotos);
+const photos = photoWallPhotos;
 
 export default function PhotoWallCarousel() {
   const [index, setIndex] = useState(0);

@@ -37,3 +37,5 @@ export const ungroupedPhotos: Photo[] = [
   { "url": "/photos/moments-05.jpg", "caption": "光影瞬间 / 11" },
   { "url": "/photos/moments-06.jpg", "caption": "光影瞬间 / 12" }
 ]
+
+export const photoWallPhotos = albums.flatMap((album) => album.photos).concat(ungroupedPhotos)
