@@ -31,6 +31,15 @@ if (existsSync(join(dist, 'assets'))) {
   renameSync(join(dist, 'assets'), join(about, 'assets'))
 }
 
+// Independent, lazily loaded 3D courtyard; reuse the entry assets without copying them.
+mkdirSync(join(dist, 'qixia'), { recursive: true })
+writeFileSync(join(dist, 'qixia', 'index.html'), readFileSync(aboutEntry, 'utf8')
+  .replaceAll('./assets/', '../about/assets/')
+  .replace(/<title>[^<]*<\/title>/, '<title>星晖古境 · 曾子丞的立体庭院</title>')
+  .replace(/<html lang="en">/, '<html lang="zh-CN">')
+  .replace(/(<meta (?:name|property)="(?:description|og:description|twitter:description)" content=")[^"]*/g, '$1九处古建，九条通往个人世界的路径。旋转、靠近，在晨曦与灯火间游览曾子丞的数字庭院。')
+  .replace(/(<meta (?:name|property)="(?:og:title|twitter:title)" content=")[^"]*/g, '$1星晖古境 · 曾子丞的立体庭院'))
+
 // 2. 门户静态页复制到 dist 根（注入最新文章卡）
 let indexHtml = readFileSync(join(portal, 'index.html'), 'utf8')
 const latestPath = join(dist, 'blog-latest.json')
@@ -73,6 +82,7 @@ cpSync(join(portal, 'music.html'), join(dist, 'music', 'index.html'))
 const checks = [
   ['门户根页', join(dist, 'index.html')],
   ['介绍页', join(about, 'index.html')],
+  ['星晖古境', join(dist, 'qixia', 'index.html')],
   ['地图页', join(dist, 'map', 'index.html')],
   ['音乐馆', join(dist, 'music', 'index.html')],
   ['音乐馆样式可达', join(dist, 'portal.css')],
