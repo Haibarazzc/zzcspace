@@ -13,8 +13,8 @@ export default function Navbar() {
   const pathname = usePathname();
   const [lang, setLang] = useState<'zh' | 'en'>('zh');
   const NAV_NAMES: Record<'zh' | 'en', string[]> = {
-    zh: ['首页', '个人介绍', '杂谈', '照片墙', '音乐', '校园地图'],
-    en: ['Home', 'About', 'Chatter', 'Photos', 'Music', 'Campus map'],
+    zh: ['首页', '个人介绍', '杂谈', '照片墙', '音乐', '校园地图', '星晖古境'],
+    en: ['Home', 'About', 'Chatter', 'Photos', 'Music', 'Campus map', 'Xinghui Courtyard'],
   };
 
   // --- 🌟 物理引擎：菜单转动逻辑 ---
@@ -80,6 +80,7 @@ export default function Navbar() {
     { name: '照片墙', href: '/photowall' },
     { name: '音乐', href: '/music' },
     { name: '校园地图', href: '/portfolio/map/', external: true },
+    { name: '星晖古境', href: '/portfolio/qixia/', external: true },
   ];
 
   // 🌟 核心：过滤掉“灵境”，专供手机端使用，保证圆盘自动重新均匀排布
@@ -92,7 +93,7 @@ export default function Navbar() {
   return (
     <>
       {/* PC端导航栏 */}
-      <header className={`hidden md:block w-full fixed top-0 left-0 right-0 z-50 transition-all duration-500 border-b ${showNav ? 'translate-y-0' : '-translate-y-full'} bg-white/40 dark:bg-slate-900/50 backdrop-blur-xl border-white/20 dark:border-white/5 shadow-sm`}>
+      <header className={`hidden lg:block w-full fixed top-0 left-0 right-0 z-50 transition-all duration-500 border-b ${showNav ? 'translate-y-0' : '-translate-y-full'} bg-white/40 dark:bg-slate-900/50 backdrop-blur-xl border-white/20 dark:border-white/5 shadow-sm`}>
         <div className="w-[90%] max-w-6xl mx-auto h-16 flex items-center justify-between px-4 sm:px-[30px] box-border">
           <Link href="/" className="text-xl font-black text-slate-800 dark:text-white tracking-tighter hover:text-indigo-600 dark:hover:text-indigo-400 transition-all duration-300">
             {siteConfig.navTitle || siteConfig.authorName}
@@ -130,8 +131,9 @@ export default function Navbar() {
       </header>
 
       {/* 📱 手机端：可拖拽吸附的触发球 */}
-      <div className="md:hidden">
+      <div className="lg:hidden">
         <motion.button
+          aria-label="打开导航菜单"
           drag="y"
           dragConstraints={constraints}
           dragElastic={0.1}
