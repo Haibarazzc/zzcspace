@@ -28,7 +28,7 @@ export const destinations = [
 ] as const
 
 export const times = {
-  dawn: { label: '晨曦', sub: '樱映晨光', background: '#493e51', sun: '#ffe5d8', sunPower: 3.3, ambient: 1.65, lamp: .55, exposure: 1.12, position: [-22, 23, 12] as [number,number,number] },
-  dusk: { label: '日暮', sub: '花染暮色', background: '#352b41', sun: '#ffbbbd', sunPower: 2.7, ambient: 1.1, lamp: 1.6, exposure: 1.08, position: [-18, 19, 16] as [number,number,number] },
+  dawn: { label: '晨曦', sub: '樱映晨光', background: '#b5bac9', sun: '#ffe5d8', sunPower: 3.3, ambient: 1.35, lamp: .55, exposure: 1.08, position: [-22, 23, 12] as [number,number,number] },
+  dusk: { label: '日暮', sub: '花染暮色', background: '#77687e', sun: '#ffbbbd', sunPower: 2.7, ambient: 1.1, lamp: 1.6, exposure: 1.08, position: [-18, 19, 16] as [number,number,number] },
   night: { label: '月夜', sub: '月下听樱', background: '#181b30', sun: '#d3d4ff', sunPower: 1.8, ambient: .9, lamp: 2.5, exposure: 1.08, position: [8, 28, -16] as [number,number,number] },
 }

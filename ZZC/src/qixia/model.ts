@@ -11,20 +11,20 @@ export function blossomRandom(seed:number) {
 }
 
 // A cupped petal with the small notch characteristic of cherry blossom.
-export function createPetalGeometry() {
+export function createPetalGeometry(segments=5) {
   const shape=new T.Shape()
   shape.moveTo(0,-.55)
   shape.bezierCurveTo(-.55,-.18,-.5,.55,-.13,.48)
   shape.lineTo(0,.32);shape.lineTo(.13,.48)
   shape.bezierCurveTo(.5,.55,.55,-.18,0,-.55)
-  const geometry=new T.ShapeGeometry(shape,5),positions=geometry.getAttribute('position')
+  const geometry=new T.ShapeGeometry(shape,segments),positions=geometry.getAttribute('position')
   for(let i=0;i<positions.count;i++)positions.setZ(i,.3*positions.getX(i)**2+.12*positions.getY(i))
   geometry.computeVertexNormals()
   return geometry
 }
 
 function createFlowerGeometry() {
-  const petal=createPetalGeometry(),parts:T.BufferGeometry[]=[]
+  const petal=createPetalGeometry(2),parts:T.BufferGeometry[]=[]
   for(let i=0;i<5;i++)parts.push(petal.clone().scale(.52,.65,.6).translate(0,.32,0).rotateZ(i*Math.PI*2/5))
   const center=new T.CircleGeometry(.085,8);center.translate(0,0,.04);parts.push(center)
   parts.forEach((part,i)=>{
@@ -41,18 +41,18 @@ function createFlowerGeometry() {
 export function buildCourtyard() {
   const group = new T.Group()
   const batches = new Map<string, Instance[]>()
+  const branches:T.BufferGeometry[]=[]
   const stone = '#9a939a', trim = '#c7bdb4', wood = '#593c3c', red = '#98534e'
   const jade = ['#34454b','#475b61','#53656b','#3d525c']
   const gold = ['#ad8d73','#c9ab86','#9c7d68','#b99a7a']
-  const blossomColors = ['#ffe9f0','#f6c6dc','#e7a0c3','#fff1ed','#eeafca']
+  const blossomColors = ['#fff1f1','#f3cdda','#edb8cc','#ffe9ed','#e2b0c4']
   const materials = {
     matte: new T.MeshStandardMaterial({ roughness: .9 }),
     roof: new T.MeshStandardMaterial({ roughness: .48, metalness: .22 }),
     lamp: new T.MeshStandardMaterial({ color: '#ffe0bd', emissive: '#ffc292', emissiveIntensity: 1.2, roughness: .7 }),
     water: new T.MeshStandardMaterial({ color: '#607082', roughness: .22, metalness: .55, transparent: true, opacity: .94 }),
-    branch: new T.MeshStandardMaterial({ roughness: .95 }),
-    blossom: new T.MeshStandardMaterial({ roughness: .95, emissive: '#ad567c', emissiveIntensity: .14 }),
-    flower: new T.MeshStandardMaterial({ roughness: .85, side: T.DoubleSide, vertexColors: true, emissive: '#c1789c', emissiveIntensity: .12 }),
+    branch: new T.MeshStandardMaterial({ roughness: 1, vertexColors: true }),
+    flower: new T.MeshStandardMaterial({ roughness: .95, side: T.DoubleSide, vertexColors: true, emissive: '#c1789c', emissiveIntensity: .025 }),
     petal: new T.MeshStandardMaterial({ roughness: .9, side: T.DoubleSide, emissive: '#b86588', emissiveIntensity: .16 }),
   }
   const dummy = new T.Object3D()
@@ -178,39 +178,68 @@ export function buildCourtyard() {
     const list=batches.get('petal')||[]
     list.push({matrix:dummy.matrix.clone(),color:new T.Color(blossomColors[Math.floor(blossomRandom(seed+5)*5)])});batches.set('petal',list)
   }
-  function tree(x:number,z:number,seed:number) {
+  function tree(x:number,z:number,seed:number,ground=.66) {
     const rnd=(n:number)=>blossomRandom(seed*101+n)
-    const height=3+rnd(1)*1.1,lean=rnd(2)*.6-.3
-    const fork:Point=[x+lean,height*.67,z+.14]
-    beam([x,.65,z],fork,.35,'#62444d','branch')
-    for(let i=0;i<9;i++){
-      const angle=i*Math.PI*2/9+rnd(i+3)*.45,radius=.65+rnd(i+22)*1.05
-      const tip:Point=[x+Math.cos(angle)*radius,height+.5+rnd(i+41)*.8,z+Math.sin(angle)*radius]
-      const elbow:Point=[x+Math.cos(angle)*radius*.58,height*.8,z+Math.sin(angle)*radius*.58]
-      beam(fork,elbow,.19,'#73505a','branch');beam(elbow,tip,.1,'#805563','branch')
-      // Overlapping faceted flower sprays leave glimpses of the branching wood.
-      for(let j=0;j<9;j++){
-        const n=i*19+j*7,theta=rnd(n+81)*Math.PI*2,r=.15+rnd(n+100)*.6
-        const px=tip[0]+Math.cos(theta)*r,pz=tip[2]+Math.sin(theta)*r,py=tip[1]+(rnd(n+120)-.4)*.8
-        const size=.25+rnd(n+150)*.4
-        box([px,py,pz],[size,size*(.65+rnd(n+160)*.35),size*.9],blossomColors[Math.floor(rnd(n+171)*5)],'blossom',theta)
-        if(j%2===0)for(let f=0;f<2;f++){
-          const a=theta+f*Math.PI,normal=new T.Vector3(Math.cos(a)*.75,.7,Math.sin(a)*.75).normalize()
-          dummy.position.set(px+normal.x*size,py+normal.y*size*.85,pz+normal.z*size*.9)
-          dummy.quaternion.setFromUnitVectors(new T.Vector3(0,0,1),normal)
-          dummy.scale.setScalar(.25+rnd(n+201+f)*.13);dummy.updateMatrix()
-          const list=batches.get('flower')||[]
-          list.push({matrix:dummy.matrix.clone(),color:new T.Color(f?'#fff1f1':'#ffd0e4')});batches.set('flower',list)
+    const height=2.5+rnd(1)*.65,rotation=rnd(2)*Math.PI*2,spread=.88+rnd(3)*.2
+    const lean=new T.Vector3(Math.cos(rotation)*.32,0,Math.sin(rotation)*.32)
+    const v=(px:number,py:number,pz:number)=>new T.Vector3(x+px,py+ground-.66,z+pz)
+
+    // Tapered, curved bark is the tree's silhouette; blossoms never fill a solid canopy.
+    const branch=(points:T.Vector3[],base:number,tip:number,segments:number,sides:number)=>{
+      const curve=new T.CatmullRomCurve3(points),geometry=new T.TubeGeometry(curve,segments,1,sides,false)
+      const positions=geometry.getAttribute('position'),colors:number[]=[]
+      for(let i=0;i<=segments;i++){
+        const t=i/segments,center=curve.getPointAt(t),radius=T.MathUtils.lerp(base,tip,t)
+        for(let j=0;j<=sides;j++){
+          const k=i*(sides+1)+j,p=new T.Vector3().fromBufferAttribute(positions,k)
+          const furrow=1+.065*Math.sin(j/sides*Math.PI*8+seed)+.025*Math.sin(t*22+seed)
+          p.sub(center).multiplyScalar(radius*furrow).add(center);positions.setXYZ(k,p.x,p.y,p.z)
+          const color=new T.Color(j%3===0?'#554449':j%3===1?'#372d32':'#45383b')
+          colors.push(color.r,color.g,color.b)
         }
+      }
+      geometry.setAttribute('color',new T.Float32BufferAttribute(colors,3));geometry.computeVertexNormals();branches.push(geometry)
+      return curve
+    }
+    const flowers=(point:T.Vector3,count:number,n:number)=>{
+      const list=batches.get('flower')||[]
+      for(let i=0;i<count;i++){
+        const k=n+i*13,angle=rnd(k+4)*Math.PI*2,radius=.035+rnd(k+8)*.105
+        dummy.position.copy(point).add(new T.Vector3(Math.cos(angle)*radius,(rnd(k+9)-.4)*.16,Math.sin(angle)*radius))
+        dummy.rotation.set(rnd(k+14)*Math.PI*2,rnd(k+16)*Math.PI*2,rnd(k+18)*Math.PI*2)
+        dummy.scale.setScalar(.07+rnd(k+20)*.055);dummy.updateMatrix()
+        list.push({matrix:dummy.matrix.clone(),color:new T.Color(blossomColors[Math.floor(rnd(k+22)*5)])})
+      }
+      batches.set('flower',list)
+    }
+    const trunk=branch([v(0,.66,0),v(-lean.x*.35,1.4,-lean.z*.35),v(lean.x*.7,2.1,lean.z*.7),v(lean.x,height,lean.z)],.18,.072,10,10)
+    for(let i=0;i<6;i++){
+      const angle=rotation+i*2.399+(rnd(i+30)-.5)*.35,length=(1.65+rnd(i+40)*.55)*spread
+      const start=trunk.getPoint(.5+i*.083),out=new T.Vector3(Math.cos(angle),0,Math.sin(angle))
+      const lift=.65+rnd(i+50)*1.1
+      const main=branch([start,start.clone().addScaledVector(out,length*.25).add(new T.Vector3(0,.2,0)),start.clone().addScaledVector(out,length*.7).add(new T.Vector3(0,lift*.72,0)),start.clone().addScaledVector(out,length).add(new T.Vector3(0,lift,0))],.09-i*.005,.025,7,7)
+      for(let j=0;j<5;j++){
+        const n=i*900+j*120+60,origin=main.getPoint(.3+j*.14),side=j%2?1:-1
+        const direction=angle+side*(.45+rnd(n)*.65),reach=(.62+rnd(n+1)*.55)*spread
+        const lateral=new T.Vector3(Math.cos(direction)*reach,.18+rnd(n+2)*.5,Math.sin(direction)*reach)
+        const secondary=branch([origin,origin.clone().addScaledVector(lateral,.48).add(new T.Vector3(0,.08,0)),origin.clone().add(lateral)],.029,.009,5,5)
+        for(let k=0;k<4;k++){
+          const m=n+k*29,at=secondary.getPoint(.2+k*.22),a=direction+(k%2?1:-1)*(.6+rnd(m+5)*.5)
+          const extent=.37+rnd(m+6)*.4,dy=(k===3?-.18:.12)+rnd(m+7)*.24
+          const end=at.clone().add(new T.Vector3(Math.cos(a)*extent,dy,Math.sin(a)*extent))
+          const twig=branch([at,at.clone().lerp(end,.5).add(new T.Vector3(0,.1,0)),end],.011,.003,3,4)
+          for(let b=0;b<6;b++)flowers(twig.getPoint(.2+b*.155),3,m*31+b*8)
+        }
+        for(let b=0;b<4;b++)flowers(secondary.getPoint(.44+b*.17),3,n*41+b*17)
       }
     }
     for(let i=0;i<42;i++){
       const angle=rnd(i+301)*Math.PI*2,r=.4+rnd(i+400)*1.9
-      fallenPetal(x+Math.cos(angle)*r,.735,z+Math.sin(angle)*r,seed*71+i)
+      fallenPetal(x+Math.cos(angle)*r,ground+.075,z+Math.sin(angle)*r,seed*71+i)
     }
   }
-  // Raised miniature landscape with masonry courses, walkways and two lotus pools.
-  box([0,-.3,0],[27.5,1.5,28],'#4c4556');box([0,.42,0],[27.8,.2,28.3],'#847c89')
+  // A low stone terrace settles into the surrounding valley.
+  box([0,.12,0],[27.5,.65,28],'#69686a');box([0,.42,0],[27.8,.2,28.3],'#847c89')
   box([0,.57,0],[26.9,.12,27.4],'#68736d')
   for(let row=0;row<16;row++)for(let col=0;col<15;col++){
     const x=(col-7)*1.5,z=(row-7.5)*1.5
@@ -237,6 +266,7 @@ export function buildCourtyard() {
     box([s*9.3,1.15,13],[7.1,1.05,.4],stone);box([s*9.3,1.75,13],[7.2,.18,.63],jade[1],'roof')
   }
   box([0,1.05,-13],[25.4,.8,.4],stone);box([0,1.53,-13],[25.8,.17,.64],jade[1],'roof')
+  for(const side of [-1,1]){tree(side*7,17,120+side,-.16);tree(side*16,2,125+side,-.16)}
   for(let i=0;i<7;i++)box([0,-.6+i*.18,14.4-i*.2],[6.6,.18,2.6-i*.2],stone)
   hall(0,-5.8,10.8,7.2,9.1,true);pavilion();pagoda(-8.7,-8.3);pagoda(8.7,-8.3)
   hall(-8.1,-.8,5.1,4.5,4.4);hall(8.1,-.8,5.1,4.5,4.4);hall(-8.1,6,5,3.8,3.8);hall(8.1,6,5,3.8,3.8)
@@ -247,12 +277,14 @@ export function buildCourtyard() {
   // Narrow covered corridors link the northern precincts.
   for(const s of [-1,1]){for(let z=-10;z<-2;z+=1.4)box([s*5.65,1.7,z],[.14,2,.14],red);roof(s*5.65,2.8,-6.5,1.8,8.4,.6)}
   for(const [key,instances] of batches){
-    const geometry=key==='blossom'?new T.IcosahedronGeometry(1,1):key==='flower'?createFlowerGeometry():key==='branch'?new T.CylinderGeometry(.45,.6,1,7):key==='petal'?createPetalGeometry():new T.BoxGeometry(1,1,1)
+    const geometry=key==='flower'?createFlowerGeometry():key==='petal'?createPetalGeometry():new T.BoxGeometry(1,1,1)
     const mesh=new T.InstancedMesh(geometry,materials[key as keyof typeof materials],instances.length)
-    mesh.name=key==='blossom'?'cherry-blossom-canopies':key==='petal'?'fallen-cherry-petals':key
+    mesh.name=key==='flower'?'individual-cherry-blossoms':key==='petal'?'fallen-cherry-petals':key
     instances.forEach((v,i)=>{mesh.setMatrixAt(i,v.matrix);if(key!=='lamp'&&key!=='water')mesh.setColorAt(i,v.color)})
     mesh.castShadow=key!=='lamp'&&key!=='water'&&key!=='petal'&&key!=='flower';mesh.receiveShadow=true;mesh.computeBoundingSphere();group.add(mesh)
   }
+  const bark=new T.Mesh(mergeGeometries(branches)!,materials.branch)
+  branches.forEach(geometry=>geometry.dispose());bark.name='sakura-branch-skeleton';bark.castShadow=true;bark.receiveShadow=true;group.add(bark)
   group.userData.landmarks=landmarks
   return { group, materials }
 }

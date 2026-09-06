@@ -8,6 +8,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
 import { blossomRandom, buildCourtyard, createPetalGeometry } from './model'
+import { buildLandscape } from './landscape'
 import { landmarks, times, type CameraShot, type TimeOfDay } from './data'
 
 export type WorldProps = { time:TimeOfDay; shot:CameraShot; selected:number; auto:boolean; reduced:boolean; onSelect:(id:number)=>void; onManual:()=>void; onBearing:(degrees:number)=>void; onReady:()=>void }
@@ -33,13 +34,13 @@ function Cinema({time}:{time:TimeOfDay}) {
 function CameraRig({shot,auto,reduced,onManual,onBearing}:Pick<WorldProps,'shot'|'auto'|'reduced'|'onManual'|'onBearing'>) {
   const controls=useRef<OrbitControlsImpl>(null)
   const {camera,size}=useThree()
-  const destination=useRef(new T.Vector3(27,27,39)),target=useRef(new T.Vector3(0,1.8,0)),moving=useRef(false),lastBearing=useRef(0)
+  const destination=useRef(new T.Vector3(31,24,45)),target=useRef(new T.Vector3(0,5,0)),moving=useRef(false),lastBearing=useRef(0)
   useEffect(()=>{
-    let pos:T.Vector3,at=new T.Vector3(0,1.8,0)
+    let pos:T.Vector3,at=new T.Vector3(0,5,0)
     if(shot.focus!==null){const b=landmarks[shot.focus];at.set(b.x,b.height*.36,b.z);const d=Math.max(b.width*2,12);pos=new T.Vector3(b.x+d*.66,b.height*.8+5,b.z+d)}
     else if(shot.mode==='axis'){pos=new T.Vector3(0,12,39);at.set(0,2.8,-1)}
     else if(shot.mode==='top'){pos=new T.Vector3(0,49,.1);at.set(0,0,0)}
-    else pos=new T.Vector3(27,27,39)
+    else pos=new T.Vector3(31,24,45)
     if(matchMedia('(max-width:900px)').matches)pos.sub(at).multiplyScalar(1.4).add(at)
     destination.current.copy(pos);target.current.copy(at)
     if(reduced){camera.position.copy(pos);controls.current?.target.copy(at);controls.current?.update()}
@@ -90,11 +91,11 @@ function Atmosphere({time,reduced}:{time:TimeOfDay;reduced:boolean}) {
   const settings=times[time]
   const targetColor=useMemo(()=>new T.Color(settings.background),[settings]),sunColor=useMemo(()=>new T.Color(settings.sun),[settings])
   const sunPosition=useMemo(()=>new T.Vector3(...settings.position),[settings])
-  useEffect(()=>{scene.background=new T.Color(settings.background);scene.fog=new T.FogExp2(settings.background,.008);return()=>{scene.fog=null}},[scene])
+  useEffect(()=>{scene.background=new T.Color(settings.background);scene.fog=new T.Fog(settings.background,55,185);return()=>{scene.fog=null}},[scene])
   useFrame((_,dt)=>{
     if(!(scene.background instanceof T.Color))scene.background=targetColor.clone()
     scene.background.lerp(targetColor,1-Math.exp(-dt*2))
-    if(scene.fog instanceof T.FogExp2)scene.fog.color.copy(scene.background as T.Color)
+    if(scene.fog)scene.fog.color.copy(scene.background as T.Color)
     if(sun.current){sun.current.color.lerp(sunColor,dt*2);sun.current.position.lerp(sunPosition,1-Math.exp(-dt*1.7));sun.current.intensity=T.MathUtils.damp(sun.current.intensity,settings.sunPower,2,dt)}
     if(fill.current)fill.current.intensity=T.MathUtils.damp(fill.current.intensity,settings.ambient,2,dt)
   })
@@ -103,8 +104,13 @@ function Atmosphere({time,reduced}:{time:TimeOfDay;reduced:boolean}) {
     <directionalLight ref={sun} position={settings.position} intensity={settings.sunPower} color={settings.sun} castShadow shadow-mapSize={[2048,2048]} shadow-camera-left={-24} shadow-camera-right={24} shadow-camera-top={24} shadow-camera-bottom={-24} shadow-camera-far={100} shadow-normalBias={.06} shadow-bias={-.00015}/>
     <directionalLight position={[15,16,-20]} intensity={1.4} color="#d8c4ef"/>
     <Petals reduced={reduced}/>
-    <mesh rotation={[-Math.PI/2,0,0]} position={[0,-1.1,0]} receiveShadow><planeGeometry args={[250,250]}/><shadowMaterial color="#21192b" transparent opacity={.18}/></mesh>
   </>
+}
+
+function Landscape() {
+  const group=useMemo(buildLandscape,[])
+  useEffect(()=>()=>{group.traverse(object=>{if(object instanceof T.Mesh||object instanceof T.LineSegments){object.geometry.dispose();const materials=Array.isArray(object.material)?object.material:[object.material];materials.forEach(material=>material.dispose())}})},[group])
+  return <primitive object={group}/>
 }
 
 function Architecture({time,selected,onSelect,onReady}:Pick<WorldProps,'time'|'selected'|'onSelect'|'onReady'>) {
@@ -124,15 +130,16 @@ function Architecture({time,selected,onSelect,onReady}:Pick<WorldProps,'time'|'s
       <mesh position={[0,b.height/2+.5,0]} onPointerOver={e=>enter(i,e)} onPointerOut={()=>{setHover(null);gl.domElement.style.cursor='grab'}} onClick={e=>{e.stopPropagation();if(e.delta<5)onSelect(i)}}>
         <boxGeometry args={[b.width,b.height,b.depth]}/><meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false}/>
       </mesh>
-      {(hover===i||selected===i)&&<Html position={[0,b.height+1.05,0]} center distanceFactor={50} zIndexRange={[5,0]} style={{pointerEvents:'none'}}><div className={`qx-pin${selected===i?' is-selected':''}`}><span>{String(i+1).padStart(2,'0')}</span>{b.name}</div></Html>}
+      {(hover===i||selected===i)&&<Html position={[0,b.height+1.05,0]} center zIndexRange={[5,0]} style={{pointerEvents:'none'}}><div className={`qx-pin${selected===i?' is-selected':''}`}><span>{String(i+1).padStart(2,'0')}</span>{b.name}</div></Html>}
     </group>)}
     {[[-3.4,2,9],[3.4,2,9],[0,3,2.4],[0,3,-2.8],[-8.7,5,-7],[8.7,5,-7]].map((p,i)=><pointLight key={i} position={p as [number,number,number]} color="#ffd0b6" intensity={time==='dawn'?2:time==='dusk'?12:22} distance={7} decay={2}/>)}
   </>
 }
 
 export default function World(props:WorldProps) {
-  return <Canvas shadows dpr={[1,1.5]} camera={{position:[27,27,39],fov:39,near:.2,far:240}} gl={{antialias:true,alpha:false,powerPreference:'high-performance'}} onCreated={({gl})=>{gl.toneMapping=T.ACESFilmicToneMapping;gl.toneMappingExposure=1.02;gl.shadowMap.type=T.PCFSoftShadowMap;gl.domElement.style.cursor='grab'}}>
+  return <Canvas shadows dpr={[1,1.5]} camera={{position:[31,24,45],fov:46,near:.2,far:280}} gl={{antialias:true,alpha:false,powerPreference:'high-performance'}} onCreated={({gl})=>{gl.toneMapping=T.ACESFilmicToneMapping;gl.toneMappingExposure=1.02;gl.shadowMap.type=T.PCFSoftShadowMap;gl.domElement.style.cursor='grab'}}>
     <Atmosphere time={props.time} reduced={props.reduced}/>
+    <Landscape/>
     <Architecture time={props.time} selected={props.selected} onSelect={props.onSelect} onReady={props.onReady}/>
     <CameraRig shot={props.shot} auto={props.auto} reduced={props.reduced} onManual={props.onManual} onBearing={props.onBearing}/>
     <Cinema time={props.time}/>
