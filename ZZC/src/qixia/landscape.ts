@@ -1,5 +1,6 @@
 import * as T from 'three'
 import { blossomRandom } from './model'
+import { buildCherryGrove } from './grove'
 
 const peaks=[[-45,-34,17,20],[-17,-59,24,18],[20,-61,21,20],[52,-29,22,22],[-59,13,19,22],[59,27,18,24],[-40,65,22,25],[27,76,23,24],[-49,-91,29,24],[54,-93,31,26]]
 const streamX=(z:number)=>23+Math.sin(z*.058)*4+Math.sin(z*.12)*1.4
@@ -71,25 +72,17 @@ export function buildLandscape() {
   const meadow=new T.InstancedMesh(grassGeometry,new T.MeshStandardMaterial({side:T.DoubleSide,roughness:1}),tufts.length)
   tufts.forEach((matrix,i)=>{meadow.setMatrixAt(i,matrix);meadow.setColorAt(i,tuftColors[i])});meadow.name='valley-meadow';meadow.receiveShadow=true;meadow.computeBoundingSphere();group.add(meadow)
 
-  // Distant evergreen silhouettes provide scale without competing with the courtyard blossoms.
-  const foliage:T.Matrix4[]=[],trunks:T.Matrix4[]=[],forestColors:T.Color[]=[],dummy=new T.Object3D()
-  for(let i=0;i<2100;i++){
-    const angle=blossomRandom(i+930)*Math.PI*2,radius=27+blossomRandom(i+1720)*68
+  // Cherry blossom woodland follows the slopes, leaving the stream and approach open.
+  const trees=[]
+  for(let i=0;i<1350;i++){
+    const angle=blossomRandom(i+930)*Math.PI*2,radius=24+blossomRandom(i+1720)*79
     const x=Math.cos(angle)*radius,z=Math.sin(angle)*radius
-    if(Math.abs(x-streamX(z))<4||z>15&&Math.abs(x-pathX(z))<3)continue
-    const y=groundHeight(x,z),height=1.1+blossomRandom(i+1240)*1.65
-    dummy.position.set(x,y+height*.38,z);dummy.scale.set(.12,height*.76,.12);dummy.rotation.set(0,angle,0);dummy.updateMatrix();trunks.push(dummy.matrix.clone())
-    for(let tier=0;tier<3;tier++){
-      const width=height*(.27-tier*.055)
-      dummy.position.set(x,y+height*(.43+tier*.19),z);dummy.scale.set(width,height*.52,width);dummy.updateMatrix();foliage.push(dummy.matrix.clone())
-      forestColors.push(new T.Color(['#344e43','#3d5748','#506451','#425c51'][i%4]))
-    }
+    if(Math.abs(x-streamX(z))<4.2||z>15&&Math.abs(x-pathX(z))<3.5)continue
+    trees.push({x,y:groundHeight(x,z),z,scale:.72+blossomRandom(i+1240)*.4,seed:i+930})
   }
-  const forest=new T.InstancedMesh(new T.ConeGeometry(1,1,7),new T.MeshStandardMaterial({roughness:1}),foliage.length)
-  foliage.forEach((matrix,i)=>{forest.setMatrixAt(i,matrix);forest.setColorAt(i,forestColors[i])});forest.name='mountainside-forest';forest.receiveShadow=true;forest.computeBoundingSphere();group.add(forest)
-  const stems=new T.InstancedMesh(new T.CylinderGeometry(.6,.8,1,5),new T.MeshStandardMaterial({color:'#493e39',roughness:1}),trunks.length)
-  trunks.forEach((matrix,i)=>stems.setMatrixAt(i,matrix));stems.computeBoundingSphere();group.add(stems)
+  group.add(buildCherryGrove(trees))
 
+  const dummy=new T.Object3D()
   const rocks=new T.InstancedMesh(new T.IcosahedronGeometry(1,0),new T.MeshStandardMaterial({roughness:1}),170)
   for(let i=0;i<170;i++){
     const z=-45+blossomRandom(i+312)*110,x=streamX(z)+(i%2?1:-1)*(2.2+blossomRandom(i+311)*1.5),size=.2+blossomRandom(i+841)*.65
