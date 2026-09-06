@@ -76,6 +76,7 @@ export function buildCherryGrove(trees:TreePosition[]) {
       flowers.setColorAt(i,new T.Color(['#ffffff','#ffe1ec','#f6d6e4'][tree.seed%3]))
     })
     bark.name=`grove-branches-${detail}`;flowers.name=`grove-blossoms-${detail}`
+    bark.castShadow=detail===2
     for(const mesh of [bark,flowers]){mesh.receiveShadow=true;mesh.computeBoundingSphere();group.add(mesh)}
   }
   return group

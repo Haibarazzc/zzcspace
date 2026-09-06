@@ -9,6 +9,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
 import { blossomRandom, buildCourtyard, createPetalGeometry } from './model'
 import { buildLandscape } from './landscape'
+import Celestial from './Celestial'
 import { landmarks, times, type CameraShot, type TimeOfDay } from './data'
 
 export type WorldProps = { time:TimeOfDay; shot:CameraShot; selected:number; auto:boolean; reduced:boolean; onSelect:(id:number)=>void; onManual:()=>void; onBearing:(degrees:number)=>void; onReady:()=>void }
@@ -17,7 +18,7 @@ function Cinema({time}:{time:TimeOfDay}) {
   const {gl,scene,camera,size}=useThree()
   const pipeline=useMemo(()=>{
     const composer=new EffectComposer(gl)
-    const render=new RenderPass(scene,camera),bloom=new UnrealBloomPass(new T.Vector2(1,1),.3,.7,1.15),output=new OutputPass()
+    const render=new RenderPass(scene,camera),bloom=new UnrealBloomPass(new T.Vector2(1,1),.2,.55,1.4),output=new OutputPass()
     composer.addPass(render);composer.addPass(bloom);composer.addPass(output)
     return {composer,bloom,render,output}
   },[gl,scene,camera])
@@ -25,7 +26,7 @@ function Cinema({time}:{time:TimeOfDay}) {
   useEffect(()=>()=>{pipeline.composer.dispose();pipeline.bloom.dispose();pipeline.render.dispose();pipeline.output.dispose()},[pipeline])
   useFrame((_,dt)=>{
     gl.toneMappingExposure=T.MathUtils.damp(gl.toneMappingExposure,times[time].exposure,2,dt)
-    pipeline.bloom.strength=T.MathUtils.damp(pipeline.bloom.strength,time==='night'?.32:time==='dusk'?.25:.19,2,dt)
+    pipeline.bloom.strength=T.MathUtils.damp(pipeline.bloom.strength,time==='night'?.2:time==='dusk'?.18:.14,2,dt)
     pipeline.composer.render(dt)
   },1)
   return null
@@ -86,7 +87,7 @@ function Petals({reduced}:{reduced:boolean}) {
 }
 
 function Atmosphere({time,reduced}:{time:TimeOfDay;reduced:boolean}) {
-  const sun=useRef<T.DirectionalLight>(null),fill=useRef<T.HemisphereLight>(null)
+  const sun=useRef<T.DirectionalLight>(null),fill=useRef<T.HemisphereLight>(null),bounce=useRef<T.DirectionalLight>(null)
   const {scene}=useThree()
   const settings=times[time]
   const targetColor=useMemo(()=>new T.Color(settings.background),[settings]),sunColor=useMemo(()=>new T.Color(settings.sun),[settings])
@@ -98,11 +99,13 @@ function Atmosphere({time,reduced}:{time:TimeOfDay;reduced:boolean}) {
     if(scene.fog)scene.fog.color.copy(scene.background as T.Color)
     if(sun.current){sun.current.color.lerp(sunColor,dt*2);sun.current.position.lerp(sunPosition,1-Math.exp(-dt*1.7));sun.current.intensity=T.MathUtils.damp(sun.current.intensity,settings.sunPower,2,dt)}
     if(fill.current)fill.current.intensity=T.MathUtils.damp(fill.current.intensity,settings.ambient,2,dt)
+    if(bounce.current)bounce.current.intensity=T.MathUtils.damp(bounce.current.intensity,time==='night'?.4:.95,2,dt)
   })
   return <>
-    <hemisphereLight ref={fill} args={['#ffe4f0','#847b91',settings.ambient]}/>
-    <directionalLight ref={sun} position={settings.position} intensity={settings.sunPower} color={settings.sun} castShadow shadow-mapSize={[2048,2048]} shadow-camera-left={-24} shadow-camera-right={24} shadow-camera-top={24} shadow-camera-bottom={-24} shadow-camera-far={100} shadow-normalBias={.06} shadow-bias={-.00015}/>
-    <directionalLight position={[15,16,-20]} intensity={1.4} color="#d8c4ef"/>
+    <hemisphereLight ref={fill} args={['#d5dff3','#56484f',settings.ambient]}/>
+    <directionalLight ref={sun} position={settings.position} intensity={settings.sunPower} color={settings.sun} castShadow shadow-mapSize={[2048,2048]} shadow-camera-left={-40} shadow-camera-right={40} shadow-camera-top={40} shadow-camera-bottom={-40} shadow-camera-far={350} shadow-normalBias={.025} shadow-bias={-.00008}/>
+    <directionalLight ref={bounce} position={[15,16,20]} intensity={.95} color="#c5d6f1"/>
+    <Celestial time={time}/>
     <Petals reduced={reduced}/>
   </>
 }
@@ -137,7 +140,7 @@ function Architecture({time,selected,onSelect,onReady}:Pick<WorldProps,'time'|'s
 }
 
 export default function World(props:WorldProps) {
-  return <Canvas shadows dpr={[1,1.5]} camera={{position:[31,24,45],fov:46,near:.2,far:280}} gl={{antialias:true,alpha:false,powerPreference:'high-performance'}} onCreated={({gl})=>{gl.toneMapping=T.ACESFilmicToneMapping;gl.toneMappingExposure=1.02;gl.shadowMap.type=T.PCFSoftShadowMap;gl.domElement.style.cursor='grab'}}>
+  return <Canvas shadows dpr={[1,1.5]} camera={{position:[31,24,45],fov:46,near:.2,far:400}} gl={{antialias:true,alpha:false,powerPreference:'high-performance'}} onCreated={({gl})=>{gl.toneMapping=T.ACESFilmicToneMapping;gl.toneMappingExposure=1.02;gl.shadowMap.type=T.PCFSoftShadowMap;gl.domElement.style.cursor='grab'}}>
     <Atmosphere time={props.time} reduced={props.reduced}/>
     <Landscape/>
     <Architecture time={props.time} selected={props.selected} onSelect={props.onSelect} onReady={props.onReady}/>
