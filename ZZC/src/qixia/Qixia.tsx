@@ -15,7 +15,7 @@ class SceneBoundary extends Component<{children:ReactNode;onError:()=>void},{fai
 }
 
 export default function Qixia() {
-  const [time,setTime]=useState<TimeOfDay>('dusk')
+  const [time,setTime]=useState<TimeOfDay>('dawn')
   const [selected,setSelected]=useState(0)
   const [shot,setShot]=useState<CameraShot>({mode:'overview',focus:null,revision:0})
   const [auto,setAuto]=useState(false)
@@ -34,7 +34,7 @@ export default function Qixia() {
   const manual=useCallback(()=>setAuto(false),[])
   const toggleOrbit=()=>{if(!auto){setShot(s=>({mode:'overview',focus:null,revision:s.revision+1}))}setAuto(!auto)}
   useEffect(()=>{
-    const previousTitle=document.title;document.title='星晖古境 · 曾子丞的立体庭院'
+    const previousTitle=document.title;document.title='樱花古境 · 曾子丞的立体庭院'
     document.documentElement.classList.add('qx-document');document.documentElement.lang='zh-CN'
     const sync=()=>setFullscreen(Boolean(document.fullscreenElement))
     const preference=matchMedia('(prefers-reduced-motion: reduce)'),syncMotion=()=>{setReduced(preference.matches);if(preference.matches)setAuto(false)}
@@ -68,26 +68,26 @@ export default function Qixia() {
     }catch{await audio.current?.close();audio.current=null;setNotice('环境音暂时无法播放，请稍后重试。')}
   }
   return <div className={`qx-scene qx-${time}`} data-ready={ready}>
-    <div className="qx-world" aria-label="可拖拽旋转、滚轮缩放的古建三维庭院"><SceneBoundary onError={onReady}><Suspense fallback={null}><World time={time} shot={shot} selected={selected} auto={auto} reduced={reduced} onSelect={select} onManual={manual} onBearing={setBearing} onReady={onReady}/></Suspense></SceneBoundary></div>
+    <div className="qx-world" aria-label="可拖拽旋转、滚轮缩放的樱花古建三维庭院"><SceneBoundary onError={onReady}><Suspense fallback={null}><World time={time} shot={shot} selected={selected} auto={auto} reduced={reduced} onSelect={select} onManual={manual} onBearing={setBearing} onReady={onReady}/></Suspense></SceneBoundary></div>
     <div className="qx-atmosphere" aria-hidden="true"/>
-    {!ready&&<div className="qx-loading" role="status"><span className="qx-loading-seal">晖</span><p>正在铺开一方天地</p></div>}
+    {!ready&&<div className="qx-loading" role="status"><span className="qx-loading-seal">樱</span><p>等一阵风，赴一场花期</p></div>}
     <header className="qx-header">
-      <a className="qx-brand" href="/" aria-label="星晖古境，返回博客"><span className="qx-seal">晖</span><span><strong>星晖古境</strong><small>XINGHUI · A PERSONAL WORLD</small></span></a>
+      <a className="qx-brand" href="/" aria-label="樱花古境，返回博客"><span className="qx-seal">樱</span><span><strong>樱花古境</strong><small>SAKURA · A PERSONAL WORLD</small></span></a>
       <div className="qx-header-right"><div className="qx-time-switch" role="group" aria-label="场景时段">{timeItems.map(({id,Icon})=><button key={id} aria-pressed={time===id} onClick={()=>setTime(id)}><Icon size={15}/><span>{times[id].label}</span></button>)}</div><button ref={helpButton} className="qx-icon" aria-label="操作指南" onClick={e=>{helpButton.current=e.currentTarget;dialog.current?.showModal()}}><HelpCircle size={18}/></button></div>
     </header>
     <aside className="qx-story">
-      <div className="qx-intro"><span className="qx-edition"><i/> 曾子丞的数字庭院</span><h1>一砖一瓦，<br/>自成山河。</h1><p>循光而行，在自己的天地里漫游。</p><div className="qx-intro-line"/></div>
+      <div className="qx-intro"><span className="qx-edition"><i/> 曾子丞的数字庭院</span><h1>一庭樱雨，<br/>半卷春风。</h1><p>循着花香，走进自己的春日。</p><div className="qx-intro-line"/></div>
       <section className="qx-chapter" aria-label="当前建筑" aria-live="polite">
         <div key={selected} className="qx-chapter-content"><div className="qx-chapter-title"><span>{String(selected+1).padStart(2,'0')} <i>/</i></span><h2>{building.name}</h2></div><span className="qx-chapter-english">{building.en}</span><p className="qx-poem">{building.copy}</p><p className="qx-description">{building.detail}</p><a className="qx-destination" href={destination.url}>{destination.label}<ArrowUpRight size={14}/></a></div>
         <div className="qx-pagination"><button className="qx-icon" aria-label="上一处建筑" onClick={()=>select((selected+8)%9)}><ChevronLeft size={18}/></button><span>{String(selected+1).padStart(2,'0')} <i>—</i> 09</span><button className="qx-icon" aria-label="下一处建筑" onClick={()=>select((selected+1)%9)}><ChevronRight size={18}/></button><span className="qx-chapter-type">{destination.note}</span></div>
       </section>
       <div className="qx-building-index" role="group" aria-label="九境目录">{landmarks.map((b,i)=><button key={b.name} aria-label={b.name} aria-pressed={selected===i} title={b.name} onClick={()=>select(i)}><span>{String(i+1).padStart(2,'0')}</span><i/></button>)}</div>
     </aside>
-    <div className="qx-world-caption" aria-hidden="true"><span>{times[time].sub}</span><i/><small>光影流转 · 方寸之间</small></div>
+    <div className="qx-world-caption" aria-hidden="true"><span>{times[time].sub}</span><i/><small>樱落有声 · 春意无尽</small></div>
     <div className="qx-compass" aria-hidden="true"><span>北</span><div><i style={{transform:`rotate(${-bearing}deg)`}}/><b>西</b><b>东</b></div><span>南</span></div>
     <nav className="qx-dock" aria-label="镜头控制"><div className="qx-view-controls">{viewItems.map(({id,label,Icon})=><button key={id} aria-pressed={shot.mode===id&&shot.focus===null} onClick={()=>view(id)}><Icon size={20}/><span>{label}</span></button>)}<span className="qx-dock-divider"/><button onClick={toggleOrbit} aria-pressed={auto} disabled={reduced} title={reduced?'已遵循减少动态效果设置':'自动环绕庭院'}>{auto?<Pause size={19}/>:<RotateCw size={21}/>}<span>自动环绕</span></button></div><button className="qx-reset" onClick={reset} aria-label="重置视角" title="重置视角 · R"><RotateCcw size={22}/></button></nav>
-    <div className="qx-footer"><a href="/" className="qx-back"><ArrowLeft size={13}/><span>返回博客</span></a><span className="qx-instructions"><Mouse size={18}/>拖拽旋转<span>·</span>滚轮缩放<span>·</span>点击建筑探索</span><span className="qx-signature">以逻辑筑境 · 以光影留白</span><div className="qx-utility"><button className="qx-icon qx-mobile-help" aria-label="操作指南" onClick={e=>{helpButton.current=e.currentTarget;dialog.current?.showModal()}}><HelpCircle size={18}/></button><button className="qx-icon" onClick={toggleSound} aria-label={sound?'关闭环境音':'开启环境音'} aria-pressed={sound}>{sound?<Volume2 size={18}/>:<VolumeX size={18}/>}</button><button className="qx-icon" onClick={toggleFullscreen} aria-label={fullscreen?'退出全屏':'进入全屏'}>{fullscreen?<Minimize2 size={18}/>:<Maximize2 size={18}/>}</button></div></div>
+    <div className="qx-footer"><a href="/" className="qx-back"><ArrowLeft size={13}/><span>返回博客</span></a><span className="qx-instructions"><Mouse size={18}/>拖拽旋转<span>·</span>滚轮缩放<span>·</span>点击建筑探索</span><span className="qx-signature">花开成境 · 风过成诗</span><div className="qx-utility"><button className="qx-icon qx-mobile-help" aria-label="操作指南" onClick={e=>{helpButton.current=e.currentTarget;dialog.current?.showModal()}}><HelpCircle size={18}/></button><button className="qx-icon" onClick={toggleSound} aria-label={sound?'关闭环境音':'开启环境音'} aria-pressed={sound}>{sound?<Volume2 size={18}/>:<VolumeX size={18}/>}</button><button className="qx-icon" onClick={toggleFullscreen} aria-label={fullscreen?'退出全屏':'进入全屏'}>{fullscreen?<Minimize2 size={18}/>:<Maximize2 size={18}/>}</button></div></div>
     {notice&&<p className="qx-notice" role="status">{notice}</p>}
-    <dialog ref={dialog} className="qx-help" onClick={e=>{if(e.target===e.currentTarget)dialog.current?.close()}} onClose={()=>helpButton.current?.focus()}><div><button className="qx-icon qx-help-close" aria-label="关闭操作指南" onClick={()=>dialog.current?.close()}><X size={20}/></button><Compass size={32}/><h2>游园有径，探索无界。</h2><p>这是一座为曾子丞构想的数字宫苑。九处建筑，九条通往个人世界的路径。</p><dl><div><dt>转动与靠近</dt><dd>鼠标拖拽 / 单指滑动旋转，滚轮 / 双指捏合缩放。</dd></div><div><dt>走进一处建筑</dt><dd>点击建筑或九境目录；← → 切换上一处、下一处。</dd></div><div><dt>换一个角度</dt><dd>1 全景 · 2 中轴 · 3 俯瞰 · R 回到起点 · T 切换时段。</dd></div></dl><small>艺术化三维场景 · 非历史建筑测绘复原</small><button className="qx-help-enter" onClick={()=>dialog.current?.close()}>继续游览<ArrowUpRight size={16}/></button></div></dialog>
+    <dialog ref={dialog} className="qx-help" onClick={e=>{if(e.target===e.currentTarget)dialog.current?.close()}} onClose={()=>helpButton.current?.focus()}><div><button className="qx-icon qx-help-close" aria-label="关闭操作指南" onClick={()=>dialog.current?.close()}><X size={20}/></button><Compass size={32}/><h2>游园有径，探索无界。</h2><p>这是一座为曾子丞构想的樱花庭院。粉白花树环抱古建，花瓣随风落向石径与池水。九处建筑，九条通往个人世界的路径。</p><dl><div><dt>转动与靠近</dt><dd>鼠标拖拽 / 单指滑动旋转，滚轮 / 双指捏合缩放。</dd></div><div><dt>走进一处建筑</dt><dd>点击建筑或九境目录；← → 切换上一处、下一处。</dd></div><div><dt>换一个角度</dt><dd>1 全景 · 2 中轴 · 3 俯瞰 · R 回到起点 · T 切换时段。</dd></div></dl><small>艺术化三维场景 · 非历史建筑测绘复原</small><button className="qx-help-enter" onClick={()=>dialog.current?.close()}>继续游览<ArrowUpRight size={16}/></button></div></dialog>
   </div>
 }

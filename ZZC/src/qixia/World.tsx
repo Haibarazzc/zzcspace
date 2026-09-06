@@ -7,7 +7,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
-import { buildCourtyard } from './model'
+import { blossomRandom, buildCourtyard, createPetalGeometry } from './model'
 import { landmarks, times, type CameraShot, type TimeOfDay } from './data'
 
 export type WorldProps = { time:TimeOfDay; shot:CameraShot; selected:number; auto:boolean; reduced:boolean; onSelect:(id:number)=>void; onManual:()=>void; onBearing:(degrees:number)=>void; onReady:()=>void }
@@ -24,7 +24,7 @@ function Cinema({time}:{time:TimeOfDay}) {
   useEffect(()=>()=>{pipeline.composer.dispose();pipeline.bloom.dispose();pipeline.render.dispose();pipeline.output.dispose()},[pipeline])
   useFrame((_,dt)=>{
     gl.toneMappingExposure=T.MathUtils.damp(gl.toneMappingExposure,times[time].exposure,2,dt)
-    pipeline.bloom.strength=T.MathUtils.damp(pipeline.bloom.strength,time==='night'?.46:time==='dusk'?.28:.12,2,dt)
+    pipeline.bloom.strength=T.MathUtils.damp(pipeline.bloom.strength,time==='night'?.32:time==='dusk'?.25:.19,2,dt)
     pipeline.composer.render(dt)
   },1)
   return null
@@ -55,33 +55,55 @@ function CameraRig({shot,auto,reduced,onManual,onBearing}:Pick<WorldProps,'shot'
   return <OrbitControls ref={controls} makeDefault enablePan={false} enableDamping dampingFactor={.075} minDistance={7} maxDistance={100} minPolarAngle={.001} maxPolarAngle={Math.PI/2-.08} autoRotateSpeed={.38} rotateSpeed={.6} zoomSpeed={.7} onStart={()=>{moving.current=false;onManual()}} target={[0,1.8,0]}/>
 }
 
+function Petals({reduced}:{reduced:boolean}) {
+  const mesh=useRef<T.InstancedMesh>(null),elapsed=useRef(0)
+  const geometry=useMemo(createPetalGeometry,[]),dummy=useMemo(()=>new T.Object3D(),[])
+  const seeds=useMemo(()=>Array.from({length:210},(_,i)=>({
+    x:(blossomRandom(i+21)-.5)*33,z:(blossomRandom(i+412)-.5)*31,
+    phase:blossomRandom(i+701)*17,speed:.35+blossomRandom(i+821)*.5,
+    size:.11+blossomRandom(i+1501)*.13,spin:blossomRandom(i+922)*Math.PI*2,
+  })),[])
+  useEffect(()=>{
+    if(mesh.current){mesh.current.instanceMatrix.setUsage(T.DynamicDrawUsage);seeds.forEach((_,i)=>mesh.current!.setColorAt(i,new T.Color(i%3?'#ffd8e9':'#fff1f0')))}
+    return()=>geometry.dispose()
+  },[geometry,seeds])
+  useFrame((_,dt)=>{
+    if(!mesh.current)return
+    if(!reduced)elapsed.current+=Math.min(dt,.05)
+    const t=elapsed.current
+    seeds.forEach((p,i)=>{
+      const y=.8+T.MathUtils.euclideanModulo(p.phase-t*p.speed,17)
+      dummy.position.set(p.x+Math.sin(t*.25+p.spin)*1.7,y,p.z+Math.sin(t*.34+p.phase)*.8)
+      dummy.rotation.set(p.spin+t*.7,Math.sin(t*.65+p.phase)*.8,p.spin+t*.45)
+      dummy.scale.set(p.size,p.size,p.size);dummy.updateMatrix();mesh.current!.setMatrixAt(i,dummy.matrix)
+    })
+    mesh.current.instanceMatrix.needsUpdate=true
+  })
+  return <instancedMesh ref={mesh} name="drifting-cherry-petals" args={[geometry,undefined,seeds.length]} frustumCulled={false}>
+    <meshStandardMaterial side={T.DoubleSide} roughness={.85} emissive="#d69cb6" emissiveIntensity={.28}/>
+  </instancedMesh>
+}
+
 function Atmosphere({time,reduced}:{time:TimeOfDay;reduced:boolean}) {
-  const points=useRef<T.Points>(null),sun=useRef<T.DirectionalLight>(null),fill=useRef<T.HemisphereLight>(null)
+  const sun=useRef<T.DirectionalLight>(null),fill=useRef<T.HemisphereLight>(null)
   const {scene}=useThree()
   const settings=times[time]
   const targetColor=useMemo(()=>new T.Color(settings.background),[settings]),sunColor=useMemo(()=>new T.Color(settings.sun),[settings])
   const sunPosition=useMemo(()=>new T.Vector3(...settings.position),[settings])
-  const geometry=useMemo(()=>{
-    const g=new T.BufferGeometry(),p=[]
-    for(let i=0;i<100;i++)p.push(Math.sin(i*74.3)*19,1+(i%19)*.65,Math.cos(i*37.2)*19)
-    g.setAttribute('position',new T.Float32BufferAttribute(p,3));return g
-  },[])
-  useEffect(()=>{scene.background=new T.Color(settings.background);scene.fog=new T.FogExp2(settings.fog,.009);return()=>{scene.fog=null}},[scene])
-  useEffect(()=>()=>geometry.dispose(),[geometry])
-  useFrame((state,dt)=>{
+  useEffect(()=>{scene.background=new T.Color(settings.background);scene.fog=new T.FogExp2(settings.background,.008);return()=>{scene.fog=null}},[scene])
+  useFrame((_,dt)=>{
     if(!(scene.background instanceof T.Color))scene.background=targetColor.clone()
     scene.background.lerp(targetColor,1-Math.exp(-dt*2))
     if(scene.fog instanceof T.FogExp2)scene.fog.color.copy(scene.background as T.Color)
     if(sun.current){sun.current.color.lerp(sunColor,dt*2);sun.current.position.lerp(sunPosition,1-Math.exp(-dt*1.7));sun.current.intensity=T.MathUtils.damp(sun.current.intensity,settings.sunPower,2,dt)}
     if(fill.current)fill.current.intensity=T.MathUtils.damp(fill.current.intensity,settings.ambient,2,dt)
-    if(points.current&&!reduced){points.current.rotation.y=state.clock.elapsedTime*.012;points.current.position.y=Math.sin(state.clock.elapsedTime*.15)*.22}
   })
   return <>
-    <hemisphereLight ref={fill} args={['#a3c3cd','#34392b',settings.ambient]}/>
+    <hemisphereLight ref={fill} args={['#ffe4f0','#847b91',settings.ambient]}/>
     <directionalLight ref={sun} position={settings.position} intensity={settings.sunPower} color={settings.sun} castShadow shadow-mapSize={[2048,2048]} shadow-camera-left={-24} shadow-camera-right={24} shadow-camera-top={24} shadow-camera-bottom={-24} shadow-camera-far={100} shadow-normalBias={.06} shadow-bias={-.00015}/>
-    <directionalLight position={[15,16,-20]} intensity={.85} color="#71abb6"/>
-    <points ref={points} geometry={geometry}><pointsMaterial color="#d6c591" size={.035} transparent opacity={time==='dawn'?.2:.52} depthWrite={false}/></points>
-    <mesh rotation={[-Math.PI/2,0,0]} position={[0,-1.1,0]} receiveShadow><planeGeometry args={[250,250]}/><meshStandardMaterial color="#102029" roughness={1}/></mesh>
+    <directionalLight position={[15,16,-20]} intensity={1.4} color="#d8c4ef"/>
+    <Petals reduced={reduced}/>
+    <mesh rotation={[-Math.PI/2,0,0]} position={[0,-1.1,0]} receiveShadow><planeGeometry args={[250,250]}/><shadowMaterial color="#21192b" transparent opacity={.18}/></mesh>
   </>
 }
 
@@ -104,7 +126,7 @@ function Architecture({time,selected,onSelect,onReady}:Pick<WorldProps,'time'|'s
       </mesh>
       {(hover===i||selected===i)&&<Html position={[0,b.height+1.05,0]} center distanceFactor={50} zIndexRange={[5,0]} style={{pointerEvents:'none'}}><div className={`qx-pin${selected===i?' is-selected':''}`}><span>{String(i+1).padStart(2,'0')}</span>{b.name}</div></Html>}
     </group>)}
-    {[[-3.4,2,9],[3.4,2,9],[0,3,2.4],[0,3,-2.8],[-8.7,5,-7],[8.7,5,-7]].map((p,i)=><pointLight key={i} position={p as [number,number,number]} color="#ffb565" intensity={time==='dawn'?3:time==='dusk'?18:32} distance={7} decay={2}/>)}
+    {[[-3.4,2,9],[3.4,2,9],[0,3,2.4],[0,3,-2.8],[-8.7,5,-7],[8.7,5,-7]].map((p,i)=><pointLight key={i} position={p as [number,number,number]} color="#ffd0b6" intensity={time==='dawn'?2:time==='dusk'?12:22} distance={7} decay={2}/>)}
   </>
 }
 

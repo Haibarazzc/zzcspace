@@ -1,21 +1,59 @@
 import * as T from 'three'
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import { landmarks } from './data'
 
 type Point = [number, number, number]
 type Instance = { matrix: T.Matrix4; color: T.Color }
 
+export function blossomRandom(seed:number) {
+  const value=Math.sin(seed*127.1+311.7)*43758.5453
+  return value-Math.floor(value)
+}
+
+// A cupped petal with the small notch characteristic of cherry blossom.
+export function createPetalGeometry() {
+  const shape=new T.Shape()
+  shape.moveTo(0,-.55)
+  shape.bezierCurveTo(-.55,-.18,-.5,.55,-.13,.48)
+  shape.lineTo(0,.32);shape.lineTo(.13,.48)
+  shape.bezierCurveTo(.5,.55,.55,-.18,0,-.55)
+  const geometry=new T.ShapeGeometry(shape,5),positions=geometry.getAttribute('position')
+  for(let i=0;i<positions.count;i++)positions.setZ(i,.3*positions.getX(i)**2+.12*positions.getY(i))
+  geometry.computeVertexNormals()
+  return geometry
+}
+
+function createFlowerGeometry() {
+  const petal=createPetalGeometry(),parts:T.BufferGeometry[]=[]
+  for(let i=0;i<5;i++)parts.push(petal.clone().scale(.52,.65,.6).translate(0,.32,0).rotateZ(i*Math.PI*2/5))
+  const center=new T.CircleGeometry(.085,8);center.translate(0,0,.04);parts.push(center)
+  parts.forEach((part,i)=>{
+    const color=new T.Color(i===5?'#b95c84':'#ffffff'),colors=[]
+    for(let j=0;j<part.getAttribute('position').count;j++)colors.push(color.r,color.g,color.b)
+    part.setAttribute('color',new T.Float32BufferAttribute(colors,3))
+  })
+  const geometry=mergeGeometries(parts)!
+  petal.dispose();parts.forEach(part=>part.dispose())
+  return geometry
+}
+
 // Thousands of tiles, lattice bars and stones are batched into a handful of draw calls.
 export function buildCourtyard() {
   const group = new T.Group()
   const batches = new Map<string, Instance[]>()
-  const stone = '#83918a', trim = '#b4b5a0', wood = '#512d23', red = '#943b25'
-  const jade = ['#183b37','#23463e','#315043','#294239']
-  const gold = ['#867044','#aa9052','#79683f','#9a8145']
+  const stone = '#9a939a', trim = '#c7bdb4', wood = '#593c3c', red = '#98534e'
+  const jade = ['#34454b','#475b61','#53656b','#3d525c']
+  const gold = ['#ad8d73','#c9ab86','#9c7d68','#b99a7a']
+  const blossomColors = ['#ffe9f0','#f6c6dc','#e7a0c3','#fff1ed','#eeafca']
   const materials = {
     matte: new T.MeshStandardMaterial({ roughness: .9 }),
     roof: new T.MeshStandardMaterial({ roughness: .48, metalness: .22 }),
-    lamp: new T.MeshStandardMaterial({ color: '#ffc875', emissive: '#ffae4c', emissiveIntensity: 2.8, roughness: .7 }),
-    water: new T.MeshStandardMaterial({ color: '#164b4d', roughness: .17, metalness: .65, transparent: true, opacity: .94 }),
+    lamp: new T.MeshStandardMaterial({ color: '#ffe0bd', emissive: '#ffc292', emissiveIntensity: 1.2, roughness: .7 }),
+    water: new T.MeshStandardMaterial({ color: '#607082', roughness: .22, metalness: .55, transparent: true, opacity: .94 }),
+    branch: new T.MeshStandardMaterial({ roughness: .95 }),
+    blossom: new T.MeshStandardMaterial({ roughness: .95, emissive: '#ad567c', emissiveIntensity: .14 }),
+    flower: new T.MeshStandardMaterial({ roughness: .85, side: T.DoubleSide, vertexColors: true, emissive: '#c1789c', emissiveIntensity: .12 }),
+    petal: new T.MeshStandardMaterial({ roughness: .9, side: T.DoubleSide, emissive: '#b86588', emissiveIntensity: .16 }),
   }
   const dummy = new T.Object3D()
   function box(pos: Point, size: Point, color: string, material = 'matte', rotation = 0) {
@@ -106,7 +144,7 @@ export function buildCourtyard() {
       roof(x,upper+.8,z,w*.94,d*.9,h*.25,true)
       // Plaque lettering is drawn onto a real mesh, not an HTML overlay.
       const c=document.createElement('canvas');c.width=512;c.height=128;const ctx=c.getContext('2d')!
-      ctx.fillStyle='#20312c';ctx.fillRect(0,0,512,128);ctx.strokeStyle='#b4a06b';ctx.lineWidth=10;ctx.strokeRect(8,8,496,112);ctx.fillStyle='#e1c88b';ctx.textAlign='center';ctx.font='70px SimSun, serif';ctx.fillText('星 晖 殿',256,89)
+      ctx.fillStyle='#49343f';ctx.fillRect(0,0,512,128);ctx.strokeStyle='#c4a0a8';ctx.lineWidth=10;ctx.strokeRect(8,8,496,112);ctx.fillStyle='#f2d8cb';ctx.textAlign='center';ctx.font='70px SimSun, serif';ctx.fillText('樱 华 殿',256,89)
       const tex=new T.CanvasTexture(c);tex.colorSpace=T.SRGBColorSpace
       const plaque=new T.Mesh(new T.PlaneGeometry(2.2,.55),new T.MeshStandardMaterial({map:tex,roughness:.8}));plaque.position.set(x,floor+wallH-.1,z+wallD/2+.3);group.add(plaque)
     }
@@ -133,25 +171,53 @@ export function buildCourtyard() {
     box([0,3.65,z],[3.3,.22,3.3],red);roof(0,3.75,z,4.8,4.8,1.5,true)
     rail(-1.85,1.05,z,3.6,'z');rail(1.85,1.05,z,3.6,'z');rail(0,1.05,z-1.85,3.6)
   }
-  function tree(x:number,z:number,seed:number,ginkgo=false) {
-    const rnd=(n:number)=>{const v=Math.sin(seed*18.7+n*83.23)*43758.5453;return v-Math.floor(v)}
-    const height=2.6+rnd(1)*1.6
-    box([x,.6+height/2,z],[.25,height,.25],'#4a4533')
-    for(let i=0;i<13;i++){
-      const angle=rnd(i+3)*Math.PI*2,radius=rnd(i+22)*1.15
-      const px=x+Math.cos(angle)*radius,pz=z+Math.sin(angle)*radius,py=.8+height-rnd(i+80)*1.1
-      if(i%4===0)beam([x,1.4,z],[px,py,pz],.15,'#504a32','matte')
-      box([px,py,pz],[.6+rnd(i+42)*1.15,.24+rnd(i+64)*.45,.6+rnd(i+73)*1.05],ginkgo?['#838148','#a79a54','#c3ac62','#697043'][i%4]:['#244d3c','#38664b','#466e4e','#385d3e'][i%4])
+  function fallenPetal(x:number,y:number,z:number,seed:number) {
+    const s=.07+blossomRandom(seed)*.12
+    dummy.position.set(x,y,z);dummy.scale.set(s,s, s)
+    dummy.rotation.set(-Math.PI/2,0,seed);dummy.updateMatrix()
+    const list=batches.get('petal')||[]
+    list.push({matrix:dummy.matrix.clone(),color:new T.Color(blossomColors[Math.floor(blossomRandom(seed+5)*5)])});batches.set('petal',list)
+  }
+  function tree(x:number,z:number,seed:number) {
+    const rnd=(n:number)=>blossomRandom(seed*101+n)
+    const height=3+rnd(1)*1.1,lean=rnd(2)*.6-.3
+    const fork:Point=[x+lean,height*.67,z+.14]
+    beam([x,.65,z],fork,.35,'#62444d','branch')
+    for(let i=0;i<9;i++){
+      const angle=i*Math.PI*2/9+rnd(i+3)*.45,radius=.65+rnd(i+22)*1.05
+      const tip:Point=[x+Math.cos(angle)*radius,height+.5+rnd(i+41)*.8,z+Math.sin(angle)*radius]
+      const elbow:Point=[x+Math.cos(angle)*radius*.58,height*.8,z+Math.sin(angle)*radius*.58]
+      beam(fork,elbow,.19,'#73505a','branch');beam(elbow,tip,.1,'#805563','branch')
+      // Overlapping faceted flower sprays leave glimpses of the branching wood.
+      for(let j=0;j<9;j++){
+        const n=i*19+j*7,theta=rnd(n+81)*Math.PI*2,r=.15+rnd(n+100)*.6
+        const px=tip[0]+Math.cos(theta)*r,pz=tip[2]+Math.sin(theta)*r,py=tip[1]+(rnd(n+120)-.4)*.8
+        const size=.25+rnd(n+150)*.4
+        box([px,py,pz],[size,size*(.65+rnd(n+160)*.35),size*.9],blossomColors[Math.floor(rnd(n+171)*5)],'blossom',theta)
+        if(j%2===0)for(let f=0;f<2;f++){
+          const a=theta+f*Math.PI,normal=new T.Vector3(Math.cos(a)*.75,.7,Math.sin(a)*.75).normalize()
+          dummy.position.set(px+normal.x*size,py+normal.y*size*.85,pz+normal.z*size*.9)
+          dummy.quaternion.setFromUnitVectors(new T.Vector3(0,0,1),normal)
+          dummy.scale.setScalar(.25+rnd(n+201+f)*.13);dummy.updateMatrix()
+          const list=batches.get('flower')||[]
+          list.push({matrix:dummy.matrix.clone(),color:new T.Color(f?'#fff1f1':'#ffd0e4')});batches.set('flower',list)
+        }
+      }
+    }
+    for(let i=0;i<42;i++){
+      const angle=rnd(i+301)*Math.PI*2,r=.4+rnd(i+400)*1.9
+      fallenPetal(x+Math.cos(angle)*r,.735,z+Math.sin(angle)*r,seed*71+i)
     }
   }
   // Raised miniature landscape with masonry courses, walkways and two lotus pools.
-  box([0,-.3,0],[27.5,1.5,28],'#243931');box([0,.42,0],[27.8,.2,28.3],'#56665a')
-  box([0,.57,0],[26.9,.12,27.4],'#344b3a')
+  box([0,-.3,0],[27.5,1.5,28],'#4c4556');box([0,.42,0],[27.8,.2,28.3],'#847c89')
+  box([0,.57,0],[26.9,.12,27.4],'#68736d')
   for(let row=0;row<16;row++)for(let col=0;col<15;col++){
     const x=(col-7)*1.5,z=(row-7.5)*1.5
-    box([x,.66,z],[1.46,.1,1.46],['#64736b','#737d70','#778073','#606f68'][(row*11+col*7)%4])
+    box([x,.66,z],[1.46,.1,1.46],['#9a9397','#a69e9e','#a29d9a','#908c97'][(row*11+col*7)%4])
   }
-  box([0,.68,4.8],[3.6,.1,15],'#929785')
+  box([0,.68,4.8],[3.6,.1,15],'#c2b3b2')
+  for(let i=0;i<190;i++)fallenPetal((blossomRandom(i+800)-.5)*6,.741,-1+blossomRandom(i+1100)*13,i+800)
   for(const s of [-1,1]){
     // Perimeter garden bands and walls.
     box([s*12.65,1.06,0],[.38,.85,26.8],'#788478');box([s*12.65,1.55,0],[.64,.17,26.8],jade[1],'roof')
@@ -164,7 +230,8 @@ export function buildCourtyard() {
       box([px,.945,pz],[.2,.025,.19],i%3?'#496b4d':'#6f8151', 'matte',i)
       if(i%6===0)box([px,.99,pz],[.09,.07,.09],'#c39583')
     }
-    for(let i=0;i<9;i++)tree(s*(i%2?11.2:5.2),-11.3+i*2.6,i+30+(s+1)*11,i%3!==0)
+    for(let i=0;i<9;i++)tree(s*(i%2?11.2:5.2),-11.3+i*2.6,i+30+(s+1)*11)
+    for(let i=0;i<55;i++)fallenPetal(s*8.3+(blossomRandom(i+201)-.5)*5.3,.95,10.4+(blossomRandom(i+404)-.5)*2.7,i+400)
     for(const z of [-3.1,5.8,9.1]){box([s*3.3,1.02,z],[.35,.75,.35],stone);lantern(s*3.3,1.73,z,true)}
     // Gate wall stops before the entrance.
     box([s*9.3,1.15,13],[7.1,1.05,.4],stone);box([s*9.3,1.75,13],[7.2,.18,.63],jade[1],'roof')
@@ -180,9 +247,11 @@ export function buildCourtyard() {
   // Narrow covered corridors link the northern precincts.
   for(const s of [-1,1]){for(let z=-10;z<-2;z+=1.4)box([s*5.65,1.7,z],[.14,2,.14],red);roof(s*5.65,2.8,-6.5,1.8,8.4,.6)}
   for(const [key,instances] of batches){
-    const mesh=new T.InstancedMesh(new T.BoxGeometry(1,1,1),materials[key as keyof typeof materials],instances.length)
-    instances.forEach((v,i)=>{mesh.setMatrixAt(i,v.matrix);if(key==='matte'||key==='roof')mesh.setColorAt(i,v.color)})
-    mesh.castShadow=key==='matte'||key==='roof';mesh.receiveShadow=true;mesh.computeBoundingSphere();group.add(mesh)
+    const geometry=key==='blossom'?new T.IcosahedronGeometry(1,1):key==='flower'?createFlowerGeometry():key==='branch'?new T.CylinderGeometry(.45,.6,1,7):key==='petal'?createPetalGeometry():new T.BoxGeometry(1,1,1)
+    const mesh=new T.InstancedMesh(geometry,materials[key as keyof typeof materials],instances.length)
+    mesh.name=key==='blossom'?'cherry-blossom-canopies':key==='petal'?'fallen-cherry-petals':key
+    instances.forEach((v,i)=>{mesh.setMatrixAt(i,v.matrix);if(key!=='lamp'&&key!=='water')mesh.setColorAt(i,v.color)})
+    mesh.castShadow=key!=='lamp'&&key!=='water'&&key!=='petal'&&key!=='flower';mesh.receiveShadow=true;mesh.computeBoundingSphere();group.add(mesh)
   }
   group.userData.landmarks=landmarks
   return { group, materials }
