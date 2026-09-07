@@ -29,7 +29,7 @@ description: 曾子丞 —— 数学、技术、摄影与持续探索。
 
 **联系我**
 
-* 邮箱：1071620178@qq.com
+* 邮箱：12610140@mail.sustech.edu.cn
 * 哔哩哔哩：[space.bilibili.com/3494376338623054](https://space.bilibili.com/3494376338623054)
 
 **欢迎各位朋友联系交流~**
