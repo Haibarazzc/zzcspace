@@ -30,10 +30,10 @@ export const siteConfig = {
   // 5. 首页照片墙预览图
   photoWallImage: "/bg-4.webp",
   social: {
-    github: "",
+    github: "https://github.com/Haibarazzc",
     gitee: "",
     google: "",
-    email: "",
+    email: "12610140@mail.sustech.edu.cn",
     qq: "",
     wechat: "",
   },
