@@ -134,9 +134,9 @@ export default async function Post({ params }: { params: Promise<{ slug: string 
                   </div>
 
                   {postData.tags.map((tag: string) => (
-                    <div key={tag} className="flex items-center gap-1 text-pink-600 dark:text-pink-400 font-bold bg-white/30 dark:bg-slate-900/50 px-2.5 md:px-3 py-1.5 md:py-2 rounded-full text-xs md:text-sm transition-colors duration-700 shadow-sm border border-white/20 dark:border-white/5">
+                    <Link key={tag} href={`/tags/${encodeURIComponent(tag)}`} className="flex items-center gap-1 text-pink-600 dark:text-pink-400 font-bold bg-white/30 dark:bg-slate-900/50 px-2.5 md:px-3 py-1.5 md:py-2 rounded-full text-xs md:text-sm transition-all duration-300 shadow-sm border border-white/20 dark:border-white/5 hover:shadow-md hover:-translate-y-0.5 hover:border-pink-400/50">
                       <span className="text-[10px] md:text-xs opacity-70">#</span> {tag}
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </header>

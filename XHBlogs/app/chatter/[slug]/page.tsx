@@ -155,9 +155,9 @@ export default async function ChatterDetail({ params }: { params: Promise<{ slug
                   )}
 
                   {chatterData.tags.map((tag: string) => (
-                    <div key={tag} className="flex items-center gap-1 text-slate-500 dark:text-slate-400 font-bold bg-slate-500/5 dark:bg-slate-400/10 px-3 md:px-4 py-1.5 md:py-2 rounded-2xl text-xs md:text-sm border border-slate-500/10">
+                    <Link key={tag} href={`/tags/${encodeURIComponent(tag)}`} className="flex items-center gap-1 text-slate-500 dark:text-slate-400 font-bold bg-slate-500/5 dark:bg-slate-400/10 px-3 md:px-4 py-1.5 md:py-2 rounded-2xl text-xs md:text-sm border border-slate-500/10 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-400/40">
                       <span className="text-[10px] md:text-xs opacity-70">#</span> {tag}
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </header>
