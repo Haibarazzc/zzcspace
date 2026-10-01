@@ -13,8 +13,8 @@ export default function Navbar() {
   const pathname = usePathname();
   const [lang, setLang] = useState<'zh' | 'en'>('zh');
   const NAV_NAMES: Record<'zh' | 'en', string[]> = {
-    zh: ['首页', '个人介绍', '杂谈', '照片墙', '音乐', '校园地图', '樱花古境', '狮小新'],
-    en: ['Home', 'About', 'Chatter', 'Photos', 'Music', 'Campus map', 'Sakura Courtyard', 'Lion Mascot'],
+    zh: ['首页', '个人介绍', '杂谈', '归档', '照片墙', '音乐', '校园地图', '樱花古境', '狮小新'],
+    en: ['Home', 'About', 'Chatter', 'Archive', 'Photos', 'Music', 'Campus map', 'Sakura Courtyard', 'Lion Mascot'],
   };
 
   // --- 🌟 物理引擎：菜单转动逻辑 ---
@@ -77,6 +77,7 @@ export default function Navbar() {
     { name: '首页', href: '/' },
     { name: '个人介绍', href: '/portfolio/about/', external: true },
     { name: '杂谈', href: '/chatter' },
+    { name: '归档', href: '/archive' },
     { name: '照片墙', href: '/photowall' },
     { name: '音乐', href: '/music' },
     { name: '校园地图', href: '/portfolio/map/', external: true },

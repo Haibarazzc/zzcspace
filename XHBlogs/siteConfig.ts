@@ -1,6 +1,9 @@
 // siteConfig.ts - 你的全站“控制中心”
 
 export const siteConfig = {
+  // 0. 网站线上地址（RSS / sitemap / 分享卡片链接都用它拼接）
+  url: "https://zzcspace.com",
+
   // 1. 网站标题与博主信息
   title: "曾子丞 · 个人空间",
   faviconUrl: "/favicon.png",

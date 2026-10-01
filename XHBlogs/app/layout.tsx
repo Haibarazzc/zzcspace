@@ -24,11 +24,17 @@ const notoSerif = Noto_Serif_SC({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteConfig.url),
   title: siteConfig.title,
   description: siteConfig.bio,
   icons: {
     icon: siteConfig.faviconUrl,
     apple: siteConfig.faviconUrl,
+  },
+  alternates: {
+    types: {
+      'application/rss+xml': [{ url: '/rss.xml', title: siteConfig.title }],
+    },
   },
 };
 
