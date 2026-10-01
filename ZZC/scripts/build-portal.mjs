@@ -40,6 +40,14 @@ writeFileSync(join(dist, 'qixia', 'index.html'), readFileSync(aboutEntry, 'utf8'
   .replace(/(<meta (?:name|property)="(?:description|og:description|twitter:description)" content=")[^"]*/g, '$1一庭樱雨，半卷春风。旋转、靠近，在粉白樱花与古建灯火间游览曾子丞的数字庭院。')
   .replace(/(<meta (?:name|property)="(?:og:title|twitter:title)" content=")[^"]*/g, '$1樱花古境 · 曾子丞的立体庭院'))
 
+mkdirSync(join(dist, 'shizi'), { recursive: true })
+writeFileSync(join(dist, 'shizi', 'index.html'), readFileSync(aboutEntry, 'utf8')
+  .replaceAll('./assets/', '../about/assets/')
+  .replace(/<title>[^<]*<\/title>/, '<title>狮小新 · 致新书院吉祥物</title>')
+  .replace(/<html lang="en">/, '<html lang="zh-CN">')
+  .replace(/(<meta (?:name|property)="(?:description|og:description|twitter:description)" content=")[^"]*/g, '$1一头小狮，一院朝气。旋转、靠近，按六视图看致新书院的狮子吉祥物。')
+  .replace(/(<meta (?:name|property)="(?:og:title|twitter:title)" content=")[^"]*/g, '$1狮小新 · 致新书院吉祥物'))
+
 // 2. 门户静态页复制到 dist 根（注入最新文章卡）
 let indexHtml = readFileSync(join(portal, 'index.html'), 'utf8')
 const latestPath = join(dist, 'blog-latest.json')
@@ -83,6 +91,7 @@ const checks = [
   ['门户根页', join(dist, 'index.html')],
   ['介绍页', join(about, 'index.html')],
   ['樱花古境', join(dist, 'qixia', 'index.html')],
+  ['狮小新', join(dist, 'shizi', 'index.html')],
   ['地图页', join(dist, 'map', 'index.html')],
   ['音乐馆', join(dist, 'music', 'index.html')],
   ['音乐馆样式可达', join(dist, 'portal.css')],
