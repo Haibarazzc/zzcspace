@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import mapNotes from '../ZZC/api/map-notes.ts'
-import track from '../ZZC/api/track.ts'
-import logs from '../ZZC/api/logs.ts'
+import mapNotes from '../api/map-notes.ts'
+import track from '../api/track.ts'
+import logs from '../api/logs.ts'
 
 function response() {
   return {

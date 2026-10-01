@@ -8,7 +8,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const output = join(root, 'deploy-site')
 const blog = join(root, 'XHBlogs', 'out')
 const portfolio = join(root, 'ZZC', 'dist')
-const api = join(root, 'ZZC', 'api')
+const api = join(root, 'api')
 
 for (const file of [join(blog, 'index.html'), join(portfolio, 'about', 'index.html'),
   ...['map-notes.ts', 'track.ts', 'logs.ts'].map(name => join(api, name))]) {
