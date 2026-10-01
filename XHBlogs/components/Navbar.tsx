@@ -13,8 +13,8 @@ export default function Navbar() {
   const pathname = usePathname();
   const [lang, setLang] = useState<'zh' | 'en'>('zh');
   const NAV_NAMES: Record<'zh' | 'en', string[]> = {
-    zh: ['首页', '个人介绍', '杂谈', '照片墙', '音乐', '校园地图', '樱花古境'],
-    en: ['Home', 'About', 'Chatter', 'Photos', 'Music', 'Campus map', 'Sakura Courtyard'],
+    zh: ['首页', '个人介绍', '杂谈', '照片墙', '音乐', '校园地图', '樱花古境', '狮小新'],
+    en: ['Home', 'About', 'Chatter', 'Photos', 'Music', 'Campus map', 'Sakura Courtyard', 'Lion Mascot'],
   };
 
   // --- 🌟 物理引擎：菜单转动逻辑 ---
@@ -81,6 +81,7 @@ export default function Navbar() {
     { name: '音乐', href: '/music' },
     { name: '校园地图', href: '/portfolio/map/', external: true },
     { name: '樱花古境', href: '/portfolio/qixia/', external: true },
+    { name: '狮小新', href: '/portfolio/shizi/', external: true },
   ];
 
   // 🌟 核心：过滤掉“灵境”，专供手机端使用，保证圆盘自动重新均匀排布
