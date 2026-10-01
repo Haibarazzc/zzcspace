@@ -1,0 +1,58 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "echo 根目录无依赖，跳过安装（子项目在 build 内各自 npm ci）",
+  "buildCommand": "npm run build",
+  "outputDirectory": "deploy-site",
+  "cleanUrls": true,
+  "redirects": [
+    {
+      "source": "/blog/",
+      "destination": "/portfolio/blog/",
+      "permanent": true
+    },
+    {
+      "source": "/blog/:path*/",
+      "destination": "/portfolio/blog/:path*/",
+      "permanent": true
+    },
+    {
+      "source": "/blog/:path*",
+      "destination": "/portfolio/blog/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/map/",
+      "destination": "/portfolio/map/",
+      "permanent": true
+    },
+    {
+      "source": "/map/:path*",
+      "destination": "/portfolio/map/:path*",
+      "permanent": true
+    }
+  ],
+  "headers": [
+    {
+      "source": "/portfolio/photos/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "no-referrer-when-downgrade"
+        }
+      ]
+    }
+  ]
+}
