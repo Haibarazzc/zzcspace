@@ -3,6 +3,7 @@ import { test } from 'node:test'
 import mapNotes from '../api/map-notes.ts'
 import track from '../api/track.ts'
 import logs from '../api/logs.ts'
+import stats from '../api/stats.ts'
 
 function response() {
   return {
@@ -71,4 +72,47 @@ test('map notes read/write, authentication and failed storage; tracking and prot
   await logs({ url: '/api/logs' }, res)
   assert.equal(res.statusCode, 403)
   assert.equal(commands.length, readsBefore, 'Visitor logs must stay protected')
+})
+
+test('stats aggregates daily views, uniques, top pages, referrers and devices', async t => {
+  const env = { ...process.env }
+  t.after(() => { process.env = env })
+  Object.assign(process.env, {
+    UPSTASH_REDIS_REST_URL: 'https://redis.example.test',
+    UPSTASH_REDIS_REST_TOKEN: 'test-token',
+    LOGS_KEY: 'test-logs-key',
+  })
+  const line = (o) => JSON.stringify(o)
+  t.mock.method(globalThis, 'fetch', async () => Response.json({
+    result: [
+      line({ t: '2026-10-01T02:00:00.000Z', type: 'view', vid: 'v1', page: '/posts/a', ref: 'https://google.com/', ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)' }),
+      line({ t: '2026-10-01T03:00:00.000Z', type: 'depth', vid: 'v1', page: '/posts/a', depth: 60 }),
+      line({ t: '2026-10-01T04:00:00.000Z', type: 'view', vid: 'v2', page: '/', ref: '', ua: 'Mozilla/5.0 (Windows NT 10.0)' }),
+    ],
+  }))
+  t.mock.method(console, 'log', () => {})
+
+  let res = response()
+  await stats({ url: '/api/stats?key=wrong' }, res)
+  assert.equal(res.statusCode, 403)
+
+  res = response()
+  await stats({ url: '/api/stats' }, res)
+  assert.equal(res.statusCode, 403)
+
+  res = response()
+  await stats({ url: '/api/stats?key=test-logs-key&days=1' }, res)
+  assert.equal(res.statusCode, 200)
+  const body = JSON.parse(res.body)
+  assert.equal(body.totalViews, 2)
+  assert.equal(body.totalUniques, 2)
+  assert.equal(body.readSessions, 1, 'v1 scrolled past 50% once')
+  assert.equal(body.days.length, 1)
+  assert.equal(body.days[0].views, 2)
+  assert.equal(body.days[0].uniques, 2)
+  assert.deepEqual(body.topPages[0], { name: '/posts/a', count: 1 })
+  assert.deepEqual(body.topRefs, [{ name: 'google.com', count: 1 }])
+  assert.equal(body.devices.mobile, 1)
+  assert.equal(body.devices.desktop, 1)
+  assert.equal(body.recent.length, 2)
 })
