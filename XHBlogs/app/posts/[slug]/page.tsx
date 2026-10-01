@@ -3,6 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
 import Link from 'next/link';
+import type { Metadata } from 'next';
+import { getAllPosts } from '@/lib/content';
 
 
 // 引入高亮主题
@@ -27,6 +29,33 @@ export async function generateStaticParams() {
     .map((name) => ({
       slug: name.replace(/\.md$/, ''),
     }));
+}
+
+// 每篇文章独立的标题 / 描述 / 分享卡片（OG）
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const raw = fs.readFileSync(path.join(process.cwd(), 'posts', `${slug}.md`), 'utf8');
+  const { data } = matter(raw);
+  const title = data.title || '文章';
+  const description = data.description || siteConfig.bio;
+  const cover = data.cover || siteConfig.defaultPostCover;
+  return {
+    title: `${title} | ${siteConfig.title}`,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'article',
+      publishedTime: String(data.date || ''),
+      images: [{ url: cover }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [cover],
+    },
+  };
 }
 
 function extractToc(content: string) {
@@ -77,12 +106,17 @@ async function getPostData(slug: string) {
 
   const processedContent = await renderMarkdown(content);
 
+  // 粗略阅读时长：去空白后按 400 字符/分钟估算
+  const plainChars = content.replace(/\s/g, '').length;
+  const minutes = Math.max(1, Math.round(plainChars / 400));
+
   return {
     slug,
     contentHtml: processedContent,
     toc: extractToc(content),
     title: data.title,
     date: data.date,
+    minutes,
     tags: data.tags && Array.isArray(data.tags) ? data.tags : [],
     cover: data.cover || siteConfig.defaultPostCover
   };
@@ -105,6 +139,12 @@ export default async function Post({ params }: { params: Promise<{ slug: string 
   const resolvedParams = await params;
   const postData = await getPostData(resolvedParams.slug);
   const recentPosts = getRecentPosts(resolvedParams.slug);
+
+  // 按发布时间取上一篇（更早）/ 下一篇（更新）
+  const sortedPosts = getAllPosts();
+  const idx = sortedPosts.findIndex((p) => p.slug === resolvedParams.slug);
+  const olderPost = idx >= 0 && idx < sortedPosts.length - 1 ? sortedPosts[idx + 1] : null;
+  const newerPost = idx > 0 ? sortedPosts[idx - 1] : null;
 
   return (
     <div className="min-h-screen relative pb-20">
@@ -131,6 +171,11 @@ export default async function Post({ params }: { params: Promise<{ slug: string 
                   <div className="flex items-center gap-1.5 md:gap-2 text-indigo-700 dark:text-indigo-400 font-bold bg-white/30 dark:bg-slate-900/50 px-3 md:px-4 py-1.5 md:py-2 rounded-full w-max text-xs md:text-sm transition-colors duration-700 shadow-sm border border-white/20 dark:border-white/5">
                     <svg className="w-3 h-3 md:w-4 md:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                     写作时间：{postData.date}
+                  </div>
+
+                  <div className="flex items-center gap-1.5 md:gap-2 text-indigo-700 dark:text-indigo-400 font-bold bg-white/30 dark:bg-slate-900/50 px-3 md:px-4 py-1.5 md:py-2 rounded-full w-max text-xs md:text-sm transition-colors duration-700 shadow-sm border border-white/20 dark:border-white/5">
+                    <svg className="w-3 h-3 md:w-4 md:h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                    约 {postData.minutes} 分钟
                   </div>
 
                   {postData.tags.map((tag: string) => (
@@ -238,6 +283,30 @@ export default async function Post({ params }: { params: Promise<{ slug: string 
               </div>
 
               <div className="mt-12 md:mt-16">
+                {/* 上一篇 / 下一篇 */}
+                <nav className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+                  {olderPost ? (
+                    <Link href={`/posts/${olderPost.slug}`} className="group bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-white/40 dark:border-white/10 shadow-sm px-4 py-3.5 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 hover:border-indigo-300/60">
+                      <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest mb-1">← 上一篇 · 更早</p>
+                      <p className="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-1">{olderPost.title}</p>
+                    </Link>
+                  ) : (
+                    <div className="hidden sm:block rounded-2xl border border-dashed border-slate-300/40 dark:border-slate-700/50" />
+                  )}
+                  {newerPost && (
+                    <Link href={`/posts/${newerPost.slug}`} className="group bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl rounded-2xl border border-white/40 dark:border-white/10 shadow-sm px-4 py-3.5 text-right transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 hover:border-indigo-300/60">
+                      <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 tracking-widest mb-1">下一篇 · 更新 →</p>
+                      <p className="text-sm font-bold text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-1">{newerPost.title}</p>
+                    </Link>
+                  )}
+                </nav>
+
+                {/* 版权声明 */}
+                <p className="text-center text-[11px] font-bold text-slate-400 dark:text-slate-500 border-t border-slate-300/30 dark:border-slate-700/50 pt-5">
+                  © {siteConfig.authorName} · 本文采用{' '}
+                  <a href="https://creativecommons.org/licenses/by-nc/4.0/deed.zh" target="_blank" rel="noopener noreferrer" className="text-indigo-500 hover:underline">CC BY-NC 4.0</a>{' '}
+                  许可，转载请注明出处
+                </p>
               </div>
 
             </div>
