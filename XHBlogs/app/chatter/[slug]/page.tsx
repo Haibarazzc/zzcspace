@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
 import Link from 'next/link';
+import type { Metadata } from 'next';
 
 // 🌟 核心升级：引入 Next.js 现代统一解析流
 
@@ -24,6 +25,33 @@ export async function generateStaticParams() {
     .map((name) => ({
       slug: name.replace(/\.md$/, ''),
     }));
+}
+
+// 每条杂谈独立的标题 / 描述 / 分享卡片（OG）
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const raw = fs.readFileSync(path.join(process.cwd(), 'chatters', `${slug}.md`), 'utf8');
+  const { data } = matter(raw);
+  const title = data.title || '碎片记录';
+  const description = (data.description || siteConfig.chatterDescription) as string;
+  const cover = (data.cover || siteConfig.defaultPostCover) as string;
+  return {
+    title: `${title} | ${siteConfig.title}`,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'article',
+      publishedTime: String(data.date || ''),
+      images: [{ url: cover }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [cover],
+    },
+  };
 }
 
 async function getChatterData(slug: string) {
