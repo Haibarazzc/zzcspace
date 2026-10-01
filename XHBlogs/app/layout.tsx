@@ -12,6 +12,7 @@ import BackgroundSlider from "../components/BackgroundSlider";
 import SplashScreen from "../components/SplashScreen";
 import MobileBackButton from '../components/MobileBackButton';
 import Footer from '../components/Footer';
+import Tracker from '../components/Tracker';
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -123,6 +124,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <div className="hidden md:block">
                 <ClickEffect />
               </div>
+
+              {/* 访客统计上报 */}
+              <Tracker />
             </div>
 
             <style suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `
