@@ -72,9 +72,16 @@ export default function SnakeGame() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const size = canvas.clientWidth || 420;
-    canvas.width = size * dpr; canvas.height = size * dpr;
-    const cell = size / BOARD_SIZE;
+    const metrics = { size: canvas.clientWidth || 420, cell: 0 };
+    const resize = () => {
+      metrics.size = canvas.clientWidth || metrics.size;
+      metrics.cell = metrics.size / BOARD_SIZE;
+      canvas.width = metrics.size * dpr;
+      canvas.height = metrics.size * dpr;
+    };
+    resize();
+    const observer = new ResizeObserver(resize);
+    observer.observe(canvas);
 
     let raf = 0, last = performance.now(), acc = 0;
     const frame = (now: number) => {
@@ -101,6 +108,7 @@ export default function SnakeGame() {
       } else acc = 0;
 
       // ---- 绘制 ----
+      const size = metrics.size, cell = metrics.cell;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const bg = ctx.createLinearGradient(0, 0, size, size);
       bg.addColorStop(0, '#1e293b'); bg.addColorStop(1, '#0f172a');
@@ -133,7 +141,7 @@ export default function SnakeGame() {
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
-    return () => cancelAnimationFrame(raf);
+    return () => { cancelAnimationFrame(raf); observer.disconnect(); };
   }, [best]);
 
   // 键盘：转向 / 暂停 / 开始
@@ -203,10 +211,10 @@ export default function SnakeGame() {
   );
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-5 items-start justify-center">
-      <div className="relative mx-auto w-full max-w-[440px]">
+    <div className="grid grid-cols-1 md:grid-cols-[minmax(0,620px)_minmax(0,1fr)] gap-5 items-start justify-center">
+      <div className="relative mx-auto w-full max-w-[620px]">
         <div className="flex items-center justify-between mb-2 px-1">
-          <div className="flex gap-2 text-xs font-black">
+          <div className="flex gap-2 text-xs md:text-sm font-black">
             <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">分数 {score}</span>
             <span className="px-3 py-1 rounded-full bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/20">长度 {gameRef.current.body.length}</span>
             <span className="px-3 py-1 rounded-full bg-slate-500/10 text-slate-600 dark:text-slate-300 border border-slate-500/20">速度 {speedLevel}</span>

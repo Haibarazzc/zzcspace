@@ -13,7 +13,7 @@ export default function SnakePage() {
     <div className="min-h-screen relative pb-20">
       <Navbar />
       <PageTransition>
-        <main className="w-[95%] md:w-[90%] max-w-4xl mx-auto mt-24 md:mt-28 relative z-10">
+        <main className="w-[95%] md:w-[90%] max-w-6xl mx-auto mt-24 md:mt-28 relative z-10">
           <header className="mb-6 text-center">
             <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
               贪吃蛇
