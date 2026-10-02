@@ -28,15 +28,27 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: siteConfig.title,
   description: siteConfig.bio,
+  manifest: '/manifest.webmanifest',
   icons: {
     icon: siteConfig.faviconUrl,
-    apple: siteConfig.faviconUrl,
+    apple: '/icons/icon-192.png',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: siteConfig.navTitle || siteConfig.authorName,
   },
   alternates: {
     types: {
       'application/rss+xml': [{ url: '/rss.xml', title: siteConfig.title }],
     },
   },
+};
+
+export const viewport = {
+  themeColor: '#6366f1',
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -70,6 +82,18 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                   setTimeout(() => root.classList.remove('splash-pending'), 6500);
                 }
               })();
+            `
+          }}
+        />
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator && !/^localhost$|^127\\./.test(location.hostname)) {
+                window.addEventListener('load', () => {
+                  navigator.serviceWorker.register('/sw.js').catch(() => {});
+                });
+              }
             `
           }}
         />
