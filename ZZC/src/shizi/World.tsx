@@ -159,9 +159,14 @@ function Motes({ reduced, pose }: { reduced: boolean; pose: PoseId }) {
 
 function SakuraGrove() {
   const grove = useMemo(() => buildSakuraGrove([
+    // 近景六棵
     { x: -3.4, z: -2.3, seed: 11, scale: 0.95 }, { x: 3.6, z: -2.7, seed: 27, scale: 1.05 },
     { x: -4.3, z: 1.7, seed: 43, scale: 0.9 }, { x: 4.2, z: 2.0, seed: 58, scale: 0.85 },
     { x: 0.8, z: -4.7, seed: 76, scale: 1 }, { x: -1.8, z: 4.4, seed: 91, scale: 0.8 },
+    // 远景一排（雾中层次，放大压住天际线）
+    { x: -6.8, z: -4.6, seed: 112, scale: 1.45 }, { x: 6.9, z: -4.2, seed: 128, scale: 1.3 },
+    { x: -7.6, z: 3.2, seed: 141, scale: 1.2 }, { x: 7.2, z: 4.4, seed: 156, scale: 1.5 },
+    { x: 3.4, z: -7.4, seed: 169, scale: 1.35 }, { x: -3.1, z: -7.8, seed: 183, scale: 1.6 },
   ]), [])
   useEffect(() => () => grove.dispose(), [grove])
   return <primitive object={grove.group} />
@@ -225,29 +230,6 @@ function Pond() {
           <circleGeometry args={[0.14, 9]} />
           <meshStandardMaterial color="#4c6b45" roughness={0.85} />
         </mesh>
-      ))}
-    </group>
-  )
-}
-
-function DistantTrees() {
-  const trees = useMemo(() => [
-    { x: -6.8, z: -4.6, s: 2.1 }, { x: 6.9, z: -4.2, s: 1.8 }, { x: -7.6, z: 3.2, s: 1.6 }, { x: 7.2, z: 4.4, s: 2.0 },
-    { x: 3.4, z: -7.4, s: 1.7 }, { x: -3.1, z: -7.8, s: 2.2 },
-  ], [])
-  return (
-    <group>
-      {trees.map((t, i) => (
-        <group key={i} position={[t.x, 0, t.z]} scale={t.s}>
-          <mesh position={[0, 0.9, 0]}>
-            <cylinderGeometry args={[0.09, 0.15, 1.8, 6]} />
-            <meshStandardMaterial color="#4a3a30" roughness={0.9} />
-          </mesh>
-          <mesh position={[0, 2.1, 0]}>
-            <icosahedronGeometry args={[0.85, 1]} />
-            <meshStandardMaterial color={i % 2 ? '#9c7295' : '#a87f9f'} roughness={0.95} flatShading />
-          </mesh>
-        </group>
       ))}
     </group>
   )
@@ -334,7 +316,6 @@ function Garden() {
           })}
         </group>
       ))}
-      <DistantTrees />
       <Torii />
       <Pond />
       <Fence />
