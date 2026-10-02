@@ -183,6 +183,129 @@ function SakuraTree({ x, z, scale = 1 }: { x: number; z: number; scale?: number 
   )
 }
 
+function SteppingStones() {
+  const stones = useMemo(() => [
+    { x: -0.22, z: 2.55 }, { x: 0.28, z: 3.05 }, { x: -0.1, z: 3.6 }, { x: 0.34, z: 4.15 }, { x: -0.05, z: 4.7 },
+  ], [])
+  return (
+    <group>
+      {stones.map((st, i) => (
+        <mesh key={i} position={[st.x, 0.035, st.z]} rotation={[-Math.PI / 2, 0, i * 0.9]} castShadow receiveShadow>
+          <cylinderGeometry args={[0.3, 0.27, 0.05, 7]} />
+          <meshStandardMaterial color="#8a8377" roughness={0.88} flatShading />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+function GroundPetals() {
+  const petals = useMemo(() => Array.from({ length: 22 }, (_, i) => {
+    const a = i * 2.399963
+    const r = 2.7 + ((i * 7919) % 23) / 23 * 2.6
+    return { x: Math.cos(a) * r, z: Math.sin(a) * r, s: 0.04 + ((i * 104729) % 10) / 10 * 0.03, rot: (i * 3.1) % 6.28 }
+  }), [])
+  return (
+    <group>
+      {petals.map((p, i) => (
+        <mesh key={i} position={[p.x, 0.03, p.z]} rotation={[-Math.PI / 2, 0, p.rot]}>
+          <circleGeometry args={[p.s, 5]} />
+          <meshStandardMaterial color={i % 3 === 0 ? '#f0bccd' : '#e5a3bd'} roughness={0.8} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+function Torii() {
+  return (
+    <group position={[1.15, 0, -3.9]} rotation={[0, -0.22, 0]}>
+      {[-0.62, 0.62].map(x => (
+        <mesh key={x} position={[x, 0.95, 0]} castShadow>
+          <cylinderGeometry args={[0.085, 0.1, 1.9, 10]} />
+          <meshStandardMaterial color="#a8402f" roughness={0.72} />
+        </mesh>
+      ))}
+      <mesh position={[0, 1.86, 0]} castShadow>
+        <boxGeometry args={[1.78, 0.14, 0.2]} />
+        <meshStandardMaterial color="#8f3425" roughness={0.72} />
+      </mesh>
+      <mesh position={[0, 1.44, 0]} castShadow>
+        <boxGeometry args={[1.42, 0.1, 0.14]} />
+        <meshStandardMaterial color="#a8402f" roughness={0.72} />
+      </mesh>
+    </group>
+  )
+}
+
+function Pond() {
+  return (
+    <group position={[3.5, 0, 2.5]} rotation={[0, -0.4, 0]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.018, 0]}>
+        <circleGeometry args={[0.92, 40]} />
+        <meshStandardMaterial color="#2c454e" roughness={0.12} metalness={0.35} />
+      </mesh>
+      {Array.from({ length: 9 }, (_, i) => {
+        const a = (i / 9) * Math.PI * 2
+        return (
+          <mesh key={i} position={[Math.cos(a) * 1.02, 0.05, Math.sin(a) * 1.02 * 0.92]} rotation={[0, a, 0]} scale={0.12 + (i % 3) * 0.03} castShadow>
+            <dodecahedronGeometry args={[1, 0]} />
+            <meshStandardMaterial color="#6d6a62" roughness={0.9} flatShading />
+          </mesh>
+        )
+      })}
+      {[-0.25, 0.3].map((x, i) => (
+        <mesh key={i} rotation={[-Math.PI / 2, 0, i * 1.2]} position={[x, 0.035, i === 0 ? 0.15 : -0.2]}>
+          <circleGeometry args={[0.14, 9]} />
+          <meshStandardMaterial color="#4c6b45" roughness={0.85} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
+function DistantTrees() {
+  const trees = useMemo(() => [
+    { x: -6.8, z: -4.6, s: 2.1 }, { x: 6.9, z: -4.2, s: 1.8 }, { x: -7.6, z: 3.2, s: 1.6 }, { x: 7.2, z: 4.4, s: 2.0 },
+    { x: 3.4, z: -7.4, s: 1.7 }, { x: -3.1, z: -7.8, s: 2.2 },
+  ], [])
+  return (
+    <group>
+      {trees.map((t, i) => (
+        <group key={i} position={[t.x, 0, t.z]} scale={t.s}>
+          <mesh position={[0, 0.9, 0]}>
+            <cylinderGeometry args={[0.09, 0.15, 1.8, 6]} />
+            <meshStandardMaterial color="#4a3a30" roughness={0.9} />
+          </mesh>
+          <mesh position={[0, 2.1, 0]}>
+            <icosahedronGeometry args={[0.85, 1]} />
+            <meshStandardMaterial color={i % 2 ? '#9c7295' : '#a87f9f'} roughness={0.95} flatShading />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  )
+}
+
+function Fence() {
+  return (
+    <group position={[-2.35, 0, -3.35]} rotation={[0, 0.18, 0]}>
+      {[-1.0, 0, 1.0].map(x => (
+        <mesh key={x} position={[x, 0.34, 0]} castShadow>
+          <cylinderGeometry args={[0.05, 0.06, 0.68, 7]} />
+          <meshStandardMaterial color="#5f4232" roughness={0.85} />
+        </mesh>
+      ))}
+      {[0.28, 0.48].map(y => (
+        <mesh key={y} position={[0, y, 0]} castShadow>
+          <boxGeometry args={[2.25, 0.07, 0.055]} />
+          <meshStandardMaterial color="#6b4a36" roughness={0.85} />
+        </mesh>
+      ))}
+    </group>
+  )
+}
+
 function Garden() {
   const props = useMemo(() => ({
     trees: [
@@ -212,6 +335,49 @@ function Garden() {
           <meshStandardMaterial color="#6d6a62" roughness={0.9} flatShading />
         </mesh>
       ))}
+      {/* 左前：石灯笼压住空角 */}
+      <group position={[-3.6, 0, 2.9]} rotation={[0, 0.5, 0]}>
+        <mesh position={[0, 0.09, 0]} castShadow receiveShadow>
+          <cylinderGeometry args={[0.24, 0.3, 0.18, 6]} />
+          <meshStandardMaterial color="#75716a" roughness={0.9} flatShading />
+        </mesh>
+        <mesh position={[0, 0.42, 0]} castShadow>
+          <cylinderGeometry args={[0.07, 0.09, 0.5, 6]} />
+          <meshStandardMaterial color="#807b73" roughness={0.88} flatShading />
+        </mesh>
+        <mesh position={[0, 0.78, 0]} castShadow>
+          <boxGeometry args={[0.34, 0.3, 0.34]} />
+          <meshStandardMaterial color="#e8c987" emissive="#c98f3d" emissiveIntensity={0.5} roughness={0.5} />
+        </mesh>
+        <mesh position={[0, 1.0, 0]} rotation={[0, Math.PI / 4, 0]} castShadow>
+          <coneGeometry args={[0.32, 0.24, 4]} />
+          <meshStandardMaterial color="#6b675f" roughness={0.85} flatShading />
+        </mesh>
+        <pointLight position={[0, 0.78, 0]} color="#ffcf8a" intensity={1.6} distance={3} decay={2} />
+      </group>
+      {[-4.4, 2.0].map((z, i) => (
+        <group key={i} position={[-4.15, 0, z]}>
+          <mesh position={[0, 0.16, 0]} scale={[0.26, 0.18, 0.26]} castShadow>
+            <icosahedronGeometry args={[1, 1]} />
+            <meshStandardMaterial color="#415542" roughness={0.95} flatShading />
+          </mesh>
+          {Array.from({ length: 5 }, (_, j) => {
+            const a = j * 1.256 + i
+            return (
+              <mesh key={j} position={[Math.cos(a) * 0.2, 0.32, Math.sin(a) * 0.2]} scale={0.045} castShadow>
+                <sphereGeometry args={[1, 8, 6]} />
+                <meshStandardMaterial color={j % 2 ? '#f2b8c6' : '#fff1f4'} roughness={0.7} />
+              </mesh>
+            )
+          })}
+        </group>
+      ))}
+      <DistantTrees />
+      <Torii />
+      <Pond />
+      <Fence />
+      <GroundPetals />
+      <SteppingStones />
     </group>
   )
 }
@@ -229,6 +395,16 @@ function Stage({ pose, reduced }: { pose: PoseId; reduced: boolean }) {
         <circleGeometry args={[3.4, 64]} />
         <meshStandardMaterial color="#4b5c42" roughness={0.95} />
       </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.016, 0]} receiveShadow>
+        <circleGeometry args={[2.35, 48]} />
+        <meshStandardMaterial color="#7c7568" roughness={0.9} />
+      </mesh>
+      {[0.78, 1.28, 1.78].map(r => (
+        <mesh key={r} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.024, 0]}>
+          <ringGeometry args={[r, r + 0.035, 56]} />
+          <meshStandardMaterial color="#655f54" roughness={0.92} />
+        </mesh>
+      ))}
       <Garden />
       <mesh position={[0, 0.07, 0]} receiveShadow castShadow>
         <cylinderGeometry args={[1.7, 1.86, 0.14, 72]} />
