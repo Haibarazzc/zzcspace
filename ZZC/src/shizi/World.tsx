@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, Html, Lightformer, OrbitControls } from '@react-three/drei'
 import { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
@@ -156,29 +156,120 @@ function Motes({ reduced, pose }: { reduced: boolean; pose: PoseId }) {
   )
 }
 
-function SakuraTree({ x, z, scale = 1 }: { x: number; z: number; scale?: number }) {
+function seeded(seed: number) {
+  let s = seed >>> 0 || 1
+  return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296
+}
+
+interface TreeData {
+  trunk: { from: T.Vector3; to: T.Vector3 }
+  branches: { from: T.Vector3; to: T.Vector3 }[]
+  anchors: T.Vector3[]
+}
+
+// 一棵树 = 微倾的主干 + 5~6 根上扬外张的枝条 + 枝头（与枝腹）挂花簇锚点
+function makeTree(x: number, z: number, scale: number, seed: number): TreeData {
+  const rand = seeded(seed)
+  const trunkH = (1.45 + rand() * 0.35) * scale
+  const lean = (rand() - 0.5) * 0.14
+  const trunkFrom = new T.Vector3(x, 0, z)
+  const trunkTo = new T.Vector3(x + lean * trunkH, trunkH, z + lean * 0.7 * trunkH)
+  const branches: { from: T.Vector3; to: T.Vector3 }[] = []
+  const anchors: T.Vector3[] = []
+  const count = 5 + Math.floor(rand() * 2)
+  for (let i = 0; i < count; i++) {
+    const yaw = (i / count) * Math.PI * 2 + rand() * 0.5
+    const pitch = 0.55 + rand() * 0.5 // 与竖直方向的夹角
+    const len = (0.75 + rand() * 0.45) * scale
+    const from = trunkTo.clone().addScaledVector(new T.Vector3(Math.sin(yaw) * Math.sin(pitch) * 0.3, 0.08, Math.cos(yaw) * Math.sin(pitch) * 0.3), 1)
+    const dir = new T.Vector3(Math.sin(yaw) * Math.sin(pitch), Math.cos(pitch), Math.cos(yaw) * Math.sin(pitch))
+    const to = from.clone().addScaledVector(dir, len)
+    // 樱花枝梢微垂：末端再压低一点
+    to.y -= 0.1 * scale + rand() * 0.08
+    branches.push({ from, to })
+    anchors.push(to.clone())
+    if (rand() > 0.45) anchors.push(from.clone().lerp(to, 0.55).add(new T.Vector3(0, 0.08 * scale, 0)))
+  }
+  return { trunk: { from: trunkFrom, to: trunkTo }, branches, anchors }
+}
+
+function Branch({ from, to, r0, r1 }: { from: T.Vector3; to: T.Vector3; r0: number; r1: number }) {
+  const { pos, quat, len } = useMemo(() => {
+    const dir = new T.Vector3().subVectors(to, from)
+    const len = dir.length()
+    const quat = new T.Quaternion().setFromUnitVectors(new T.Vector3(0, 1, 0), dir.normalize())
+    const pos = new T.Vector3().addVectors(from, to).multiplyScalar(0.5)
+    return { pos, quat, len }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   return (
-    <group position={[x, 0, z]} scale={scale}>
-      <mesh position={[0, 0.8, 0]} castShadow>
-        <cylinderGeometry args={[0.09, 0.15, 1.6, 8]} />
-        <meshStandardMaterial color="#5d4433" roughness={0.85} />
-      </mesh>
-      <mesh position={[0.08, 1.62, 0]} castShadow>
-        <icosahedronGeometry args={[0.72, 1]} />
-        <meshStandardMaterial color="#e39ec0" roughness={0.9} flatShading />
-      </mesh>
-      <mesh position={[-0.42, 1.86, 0.18]} castShadow>
-        <icosahedronGeometry args={[0.48, 1]} />
-        <meshStandardMaterial color="#f0b9cd" roughness={0.9} flatShading />
-      </mesh>
-      <mesh position={[0.4, 1.92, -0.2]} castShadow>
-        <icosahedronGeometry args={[0.42, 1]} />
-        <meshStandardMaterial color="#d790b4" roughness={0.9} flatShading />
-      </mesh>
-      <mesh position={[0.05, 2.3, 0.05]} castShadow>
-        <icosahedronGeometry args={[0.4, 1]} />
-        <meshStandardMaterial color="#f3c6d6" roughness={0.9} flatShading />
-      </mesh>
+    <mesh position={pos} quaternion={quat} castShadow>
+      <cylinderGeometry args={[r1, r0, len, 7]} />
+      <meshStandardMaterial color="#5d4433" roughness={0.88} />
+    </mesh>
+  )
+}
+
+const GROVE = [
+  { x: -3.4, z: -2.3, s: 1.15 }, { x: 3.6, z: -2.7, s: 1.3 }, { x: -4.3, z: 1.7, s: 1 },
+  { x: 4.2, z: 2.0, s: 0.92 }, { x: 0.8, z: -4.7, s: 1.18 }, { x: -1.8, z: 4.4, s: 0.85 },
+]
+
+const BLOSSOM_COLORS = ['#f5c6d8', '#efb1c9', '#fbdde7', '#e79fbd'].map(c => new T.Color(c))
+
+// 所有树的花朵合并为一个 InstancedMesh：每簇 9~11 朵小五面体
+function SakuraGrove() {
+  const trees = useMemo(() => GROVE.map((t, i) => makeTree(t.x, t.z, t.s, 97 + i * 131)), [])
+  const blossoms = useMemo(() => trees.flatMap(tree =>
+    tree.anchors.flatMap((anchor, ai) => {
+      const rand = seeded(31 + ai * 17)
+      const clusterR = 0.16 + rand() * 0.1
+      return Array.from({ length: 9 + Math.floor(rand() * 3) }, () => {
+        const theta = rand() * Math.PI * 2
+        const phi = Math.acos(2 * rand() - 1)
+        const r = clusterR * Math.cbrt(rand())
+        return {
+          x: anchor.x + r * Math.sin(phi) * Math.cos(theta),
+          y: anchor.y + r * Math.cos(phi) * 0.72,
+          z: anchor.z + r * Math.sin(phi) * Math.sin(theta),
+          s: 0.06 + rand() * 0.05,
+          c: Math.floor(rand() * BLOSSOM_COLORS.length),
+        }
+      })
+    })
+  ), [trees])
+
+  const wood = useMemo(() => trees.flatMap(tree => {
+    const trunkLen = tree.trunk.from.distanceTo(tree.trunk.to)
+    return [
+      { from: tree.trunk.from, to: tree.trunk.to, r0: 0.16 * (trunkLen / 1.6) + 0.04, r1: 0.055 },
+      ...tree.branches.map(b => ({ from: b.from, to: b.to, r0: 0.05, r1: 0.02 })),
+    ]
+  }), [trees])
+
+  const mesh = useRef<T.InstancedMesh>(null)
+  useLayoutEffect(() => {
+    if (!mesh.current) return
+    const dummy = new T.Object3D()
+    blossoms.forEach((b, i) => {
+      dummy.position.set(b.x, b.y, b.z)
+      dummy.scale.setScalar(b.s)
+      dummy.rotation.set(0, i * 1.7, 0)
+      dummy.updateMatrix()
+      mesh.current!.setMatrixAt(i, dummy.matrix)
+      mesh.current!.setColorAt(i, BLOSSOM_COLORS[b.c])
+    })
+    mesh.current.instanceMatrix.needsUpdate = true
+    if (mesh.current.instanceColor) mesh.current.instanceColor.needsUpdate = true
+  }, [blossoms])
+
+  return (
+    <group>
+      {wood.map((b, i) => <Branch key={i} from={b.from} to={b.to} r0={b.r0} r1={b.r1} />)}
+      <instancedMesh ref={mesh} args={[undefined, undefined, blossoms.length]} castShadow>
+        <icosahedronGeometry args={[1, 0]} />
+        <meshStandardMaterial roughness={0.85} flatShading emissive="#f5c6d8" emissiveIntensity={0.06} />
+      </instancedMesh>
     </group>
   )
 }
@@ -308,10 +399,6 @@ function Fence() {
 
 function Garden() {
   const props = useMemo(() => ({
-    trees: [
-      { x: -3.4, z: -2.3, s: 1.15 }, { x: 3.6, z: -2.7, s: 1.3 }, { x: -4.3, z: 1.7, s: 1 },
-      { x: 4.2, z: 2.0, s: 0.92 }, { x: 0.8, z: -4.7, s: 1.18 }, { x: -1.8, z: 4.4, s: 0.85 },
-    ],
     bushes: [
       { x: -2.3, z: 1.9, s: 0.42 }, { x: 2.4, z: 1.6, s: 0.36 }, { x: -2.8, z: -0.6, s: 0.3 },
       { x: 2.9, z: -0.9, s: 0.4 }, { x: 1.4, z: 2.8, s: 0.3 }, { x: -1.2, z: 3.0, s: 0.34 },
@@ -322,7 +409,7 @@ function Garden() {
   }), [])
   return (
     <group>
-      {props.trees.map(t => <SakuraTree key={t.x + 'x' + t.z} x={t.x} z={t.z} scale={t.s} />)}
+      <SakuraGrove />
       {props.bushes.map(b => (
         <mesh key={b.x + 'b' + b.z} position={[b.x, b.s * 0.55, b.z]} scale={[b.s, b.s * 0.75, b.s]} castShadow>
           <icosahedronGeometry args={[1, 1]} />
