@@ -19,7 +19,6 @@ function readRecord(config: RaceConfig) {
 
 // ===== 全网排行榜 =====
 interface BoardEntry { name: string; time: number; date: string; rank?: number }
-type ReplayEvent = { t: number; r?: 1; s?: number; a?: 0 | 1; b?: 0 | 1; d?: 0 | 1; g?: 0 | 1 };
 function loadPlayerId() {
   try {
     let id = localStorage.getItem('racer-player-id');
@@ -67,8 +66,6 @@ export default function RacerGame() {
   const [retry, setRetry] = useState(0);
   const resultSaved = useRef(false);
   // 排行榜相关
-  const replayRef = useRef<ReplayEvent[]>([]);
-  const lastInputKey = useRef('');
   const sessionRef = useRef<string | null>(null);
   const [board, setBoard] = useState<{ entries: BoardEntry[]; total: number } | null>(null);
   const [boardNote, setBoardNote] = useState('');
@@ -110,12 +107,6 @@ export default function RacerGame() {
           accelerate: pressed('ArrowUp') || pressed('KeyW'), brake: pressed('ArrowDown') || pressed('KeyS'),
           drift: pressed('ShiftLeft') || pressed('ShiftRight'), boost: pressed('Space') || boostQueued.current };
         boostQueued.current = false;
-        // 录制操作事件（输入变化时），供服务端重放校验成绩
-        const inputKey = `${input.steer}|${+input.accelerate}${+input.brake}${+input.drift}${+input.boost}`;
-        if (race.phase !== 'garage' && inputKey !== lastInputKey.current) {
-          lastInputKey.current = inputKey;
-          replayRef.current.push({ t: race.time, s: input.steer, a: +input.accelerate as 0 | 1, b: +input.brake as 0 | 1, d: +input.drift as 0 | 1, g: +input.boost as 0 | 1 });
-        }
         race.update(dt, input); world!.render(race, dt, pressed('KeyQ')); audio!.update(race);
         const countdown = Math.ceil(race.countdown);
         if (race.phase === 'countdown' && countdown !== previousCount) { audio!.beep(countdown === 0 ? 880 : 440); previousCount = countdown; }
@@ -174,7 +165,7 @@ export default function RacerGame() {
     setSubmitState('busy'); setSubmitNote('校验中…');
     try {
       const data = await apiBoard({ action: 'finish', sessionId: sessionRef.current, name,
-        config: race.config, events: replayRef.current });
+        config: race.config, time: race.player.finishedAt ?? race.time });
       try { localStorage.setItem('racer-name', name); } catch { /* 可选 */ }
       setSubmitState('done');
       setSubmitNote(data.rank ? `已上榜 · 当前第 ${data.rank} 名` : '已上榜');
@@ -187,7 +178,7 @@ export default function RacerGame() {
   const start = () => {
     if (!ready) return;
     clearInput(); resultSaved.current = false; setResult(null); setHelp(false);
-    replayRef.current = []; lastInputKey.current = ''; sessionRef.current = null;
+    sessionRef.current = null;
     setBoard(null); setBoardNote(''); setSubmitState('hidden'); setSubmitNote('');
     try { setPlayerName(localStorage.getItem('racer-name') || ''); } catch { /* 可选 */ }
     raceRef.current?.start(); shellRef.current?.focus();
@@ -251,7 +242,7 @@ export default function RacerGame() {
           if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight', 'KeyQ', 'KeyR'].includes(e.code)) {
             e.preventDefault(); keys.current.add(e.code);
             if (e.code === 'Space' && !e.repeat) boostQueued.current = true;
-            if (e.code === 'KeyR' && !e.repeat) { race.recover(); replayRef.current.push({ t: race.time, r: 1 }); }
+            if (e.code === 'KeyR' && !e.repeat) race.recover();
           }
         }} onKeyUp={e => { keys.current.delete(e.code); }}
         onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) { raceRef.current?.pause(); clearInput(); } }}>
@@ -340,7 +331,7 @@ export default function RacerGame() {
                   {board.entries.length === 0 && <li className={styles.boardEmpty}>虚位以待，第一个上榜的就是你。</li>}
                 </ol> : <p className={styles.boardNote}>{boardNote || '正在拉取排行榜…'}</p>}
                 {board && board.total > board.entries.length && <p className={styles.boardNote}>共 {board.total} 条成绩</p>}
-                <p className={styles.boardHint}>成绩由服务端重放你的操作校验，无法伪造</p>
+                <p className={styles.boardHint}>成绩按你的完成时间直接记录</p>
               </div>}
               <button className={styles.primary} onClick={start}>再跑一场 <RotateCcw size={18} /></button><button className={styles.textButton} onClick={garage}>返回车库，换条赛道</button></div></div>}
       </section>

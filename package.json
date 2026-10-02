@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node scripts/sync-game-model.mjs && npm run build:blog && npm run build:portal && npm run build:merge",
+    "build": "npm run build:blog && npm run build:portal && npm run build:merge",
     "build:blog": "npm ci --prefix XHBlogs && npm run build --prefix XHBlogs",
     "build:portal": "npm ci --prefix ZZC && npm run build --prefix ZZC",
     "build:merge": "node scripts/prepare-deploy.mjs"
