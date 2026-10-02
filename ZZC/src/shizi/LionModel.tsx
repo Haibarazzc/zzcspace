@@ -318,13 +318,14 @@ function Ear({ side }: { side: 1 | -1 }) {
 
 function Foot() {
   return (
-    <group position={[0, -0.22, 0.05]}>
-      <mesh scale={[0.16, 0.08, 0.2]} castShadow>
+    <group position={[0, -0.1, 0.06]}>
+      {/* 脚掌与小腿重叠：掌心顶到腿胶囊底部，消除断缝 */}
+      <mesh scale={[0.17, 0.1, 0.22]} castShadow>
         <sphereGeometry args={[1, 24, 16]} />
         <Glossy color={ORANGE_DEEP} roughness={0.4} />
       </mesh>
-      {[-0.07, 0, 0.07].map(offset => (
-        <mesh key={offset} position={[offset, -0.01, 0.16]} scale={[0.05, 0.045, 0.06]} castShadow>
+      {[-0.075, 0, 0.075].map(offset => (
+        <mesh key={offset} position={[offset, -0.02, 0.175]} scale={[0.055, 0.05, 0.065]} castShadow>
           <sphereGeometry args={[1, 16, 12]} />
           <Glossy color={ORANGE} roughness={0.4} />
         </mesh>
@@ -455,11 +456,11 @@ export default function LionModel({ pose, reduced, selected, onSelect }: { pose:
 
       {([-1, 1] as const).map(side => (
         <group key={side} ref={side < 0 ? legL : legR} position={[side * 0.18, 0.42, 0.04]} rotation={[0.05, 0, side * 0.05]}>
-          <mesh position={[0, -0.08, 0]} castShadow>
-            <capsuleGeometry args={[0.12, 0.12, 6, 14]} />
+          <mesh position={[0, -0.1, 0]} castShadow>
+            <capsuleGeometry args={[0.115, 0.24, 6, 14]} />
             <Glossy color={limb ? '#ffb83c' : ORANGE} />
           </mesh>
-          <group ref={side < 0 ? kneeL : kneeR} position={[0, -0.18, 0]}>
+          <group ref={side < 0 ? kneeL : kneeR} position={[0, -0.26, 0]}>
             <Foot />
           </group>
         </group>
