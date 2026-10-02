@@ -299,3 +299,29 @@
 }
 /* The game has its own navigation; the site's floating back button must not cover driving controls. */
 :global(body):has(.wrapper) :global(button[title='返回上一页']) { display: none; }
+
+/* ===== 全网排行榜 ===== */
+.board { border-top: 1px solid #d8e4de; padding-top: 14px; display: flex; flex-direction: column; gap: 9px; }
+.boardHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.boardHead h3 { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 850; color: #2c4a56; margin: 0; }
+.boardHead h3 svg { color: #d99a2b; }
+.boardSubmit { display: flex; gap: 7px; }
+.boardSubmit input { width: 128px; padding: 7px 11px; border: 1px solid #c9d8d3; border-radius: 9px; font: inherit; font-size: 13px; background: #fff; }
+.boardSubmit button { padding: 7px 15px; border: none; border-radius: 9px; background: var(--accent); color: #fff; font-weight: 800; font-size: 13px; }
+.boardSubmit button:hover { background: #066a77; }
+.boardList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; max-height: 168px; overflow-y: auto; }
+.boardList li { display: flex; align-items: center; gap: 9px; padding: 5px 9px; border-radius: 8px; background: #f4f8f5; font-size: 13px; }
+.boardList li b { width: 20px; text-align: center; font-size: 11px; color: #57737d; }
+.boardList li span { flex: 1; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.boardList li em { font-style: normal; font-variant-numeric: tabular-nums; font-weight: 750; color: #2c4a56; }
+.boardList li:nth-child(-n+3) b { color: #d99a2b; }
+.boardEmpty { justify-content: center; color: #6d8791; font-size: 12px; background: transparent; }
+.boardNote { margin: 0; font-size: 12px; color: #6d8791; }
+.boardNoteOk { font-size: 12px; font-weight: 800; color: #0b8a51; }
+.boardNoteErr { font-size: 12px; font-weight: 700; color: #c23c3c; }
+.boardHint { margin: 0; font-size: 10px; color: #8aa3ab; }
+.garageBoard { border-top: 1px dashed #d5e2db; padding-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.garageBoard .boardHead h3 { font-size: 12px; }
+.garageBoard .boardList { max-height: 132px; }
+.garageBoard .boardList li { padding: 4px 8px; font-size: 12px; }
+.boardRefresh { border: 1px solid #c9d8d3; background: transparent; border-radius: 7px; font-size: 11px; padding: 3px 10px; color: #4c6a74; font-weight: 700; }
