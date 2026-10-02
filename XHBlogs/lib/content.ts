@@ -114,3 +114,52 @@ export function getAllTags(): TagInfo[] {
 export function getTagInfo(tag: string): TagInfo | undefined {
   return getAllTags().find((info) => info.tag === tag);
 }
+
+// ==========================================
+// RSS 全文输出用：读取正文并套用与文章页一致的渲染前清洗
+// ==========================================
+
+export function cleanMarkdownForRender(content: string): string {
+  // 1. 修复数字列表缺空格（1.百度 -> 1. 百度）
+  content = content.replace(/^(\s*\d+)\.([^ \n])/gm, '$1. $2');
+  // 2. 统一换行、清掉纯空格废行
+  content = content.replace(/\r\n/g, '\n').replace(/^[ \t]+$/gm, '');
+  // 3. 代码块外的连续空行补 <br>（与文章页一致，防渲染引擎吞行）
+  const blocks = content.split(/(```[\s\S]*?```|~~~[\s\S]*?~~~)/g);
+  return blocks
+    .map((block, index) => {
+      if (index % 2 === 1) return block;
+      return block.replace(/\n{3,}/g, (m) => '\n\n' + '<br/>'.repeat(m.length - 2) + '\n\n');
+    })
+    .join('');
+}
+
+export interface FeedItem {
+  slug: string;
+  kind: 'post' | 'chatter';
+  title: string;
+  date: string;
+  description: string;
+  tags: string[];
+  content: string; // 原始 markdown 正文
+}
+
+export function getFeedItems(): FeedItem[] {
+  const posts = readMatter('posts').map(({ slug, data, content }) => ({
+    slug, kind: 'post' as const,
+    title: String(data.title || '无标题'),
+    date: String(data.date || ''),
+    description: String(data.description || ''),
+    tags: Array.isArray(data.tags) ? data.tags : [],
+    content,
+  }));
+  const chatters = readMatter('chatters').map(({ slug, data, content }) => ({
+    slug, kind: 'chatter' as const,
+    title: String(data.title || '碎片记录'),
+    date: String(data.date || ''),
+    description: String(data.description || ''),
+    tags: Array.isArray(data.tags) ? data.tags : [],
+    content,
+  }));
+  return [...posts, ...chatters].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
