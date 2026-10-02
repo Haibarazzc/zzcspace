@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { syncGameModel } from '../scripts/sync-game-model.mjs';
 import board, { verifyReplay } from '../api/racer-board.ts';
 import { Race } from '../XHBlogs/app/game/race-model.ts';
+syncGameModel();
 
 // ---- 测试用驾驶机器人：与 AI 类似的转向逻辑，完整跑完一场并按客户端格式记录事件 ----
 function botRace(config, { autoAccelerate = false } = {}) {
@@ -38,35 +40,35 @@ function botRace(config, { autoAccelerate = false } = {}) {
 
 const CONFIG = { track: 'sakura', car: 0, mode: 'time', laps: 1, difficulty: 1, autoAccelerate: false };
 
-test('replay verification matches the original run exactly and rejects tampering', async () => {
+test('replay verification matches the original run exactly and rejects tampering', () => {
   const { race, events } = botRace(CONFIG);
   const finishedAt = race.player.finishedAt;
   assert.notEqual(finishedAt, null, 'bot must finish the race');
   assert.ok(events.length > 10, 'bot must produce input events');
 
-  const verified = await verifyReplay(CONFIG, events);
+  const verified = verifyReplay(CONFIG, events);
   assert.ok(verified, 'replay must verify');
   assert.ok(Math.abs(verified.time - finishedAt) < 0.001, `time must match (sim ${finishedAt} vs replay ${verified.time})`);
 
   // 篡改：丢掉后半段事件 → 无法复原原成绩（不同时间或直接失败）
   const truncated = events.slice(0, Math.floor(events.length / 2));
-  const tampered = await verifyReplay(CONFIG, truncated);
+  const tampered = verifyReplay(CONFIG, truncated);
   assert.ok(!tampered || Math.abs(tampered.time - finishedAt) > 0.05, 'truncated replay must not reproduce the time');
 
   // 篡改：时间乱序 → 拒绝
   const shuffled = [...events].reverse();
-  assert.equal(await verifyReplay(CONFIG, shuffled), null, 'out-of-order events must be rejected');
+  assert.equal(verifyReplay(CONFIG, shuffled), null, 'out-of-order events must be rejected');
 
   // 非法配置 → 拒绝
-  assert.equal(await verifyReplay({ ...CONFIG, laps: 9 }, events), null);
-  assert.equal(await verifyReplay({ ...CONFIG, track: "moon" }, events), null);
+  assert.equal(verifyReplay({ ...CONFIG, laps: 9 }, events), null, 'invalid laps must be rejected');
+  assert.equal(verifyReplay({ ...CONFIG, track: 'moon' }, events), null);
 });
 
-test('autoAccelerate config must be honoured by the replay', async () => {
+test('autoAccelerate config must be honoured by the replay', () => {
   // 客户端开着自动油门：事件里 accelerate 全为 0，回放也必须跑完
   const { race, events } = botRace(CONFIG, { autoAccelerate: true });
   assert.notEqual(race.player.finishedAt, null);
-  const verified = await verifyReplay({ ...CONFIG, autoAccelerate: true }, events);
+  const verified = verifyReplay({ ...CONFIG, autoAccelerate: true }, events);
   assert.ok(verified, 'auto-accelerate replay must verify');
   assert.ok(Math.abs(verified.time - race.player.finishedAt) < 0.001);
 });
