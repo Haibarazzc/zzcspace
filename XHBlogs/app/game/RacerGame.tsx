@@ -106,7 +106,7 @@ export default function RacerGame() {
         const dt = Math.min(.1, (now - last) / 1000); last = now;
         const race = raceRef.current!;
         const pressed = (key: string) => keys.current.has(key) || [...touches.current.values()].includes(key);
-        const input: Input = { ...EMPTY_INPUT, steer: Number(pressed('ArrowRight') || pressed('KeyD')) - Number(pressed('ArrowLeft') || pressed('KeyA')),
+        const input: Input = { ...EMPTY_INPUT, steer: Number(pressed('ArrowLeft') || pressed('KeyA')) - Number(pressed('ArrowRight') || pressed('KeyD')),
           accelerate: pressed('ArrowUp') || pressed('KeyW'), brake: pressed('ArrowDown') || pressed('KeyS'),
           drift: pressed('ShiftLeft') || pressed('ShiftRight'), boost: pressed('Space') || boostQueued.current };
         boostQueued.current = false;
