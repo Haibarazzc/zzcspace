@@ -2,7 +2,7 @@
 // 服务端用与游戏完全相同的确定性模拟重放对局输入，验证通过才入库。
 // No npm dependencies; Redis credentials stay on the server.
 import { createHash, randomUUID } from 'node:crypto';
-import { Race, TRACK_INFO, CARS } from '../XHBlogs/app/game/race-model.ts';
+import { Race, TRACK_INFO, CARS } from '../XHBlogs/app/game/race-model';
 
 type Request = { method?: string; url?: string; headers?: Record<string, string | string[] | undefined>; body?: unknown };
 type Response = { setHeader: (key: string, value: string) => void; status: (code: number) => Response; send: (body: string) => void };
