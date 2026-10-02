@@ -167,13 +167,16 @@ export class RaceWorld {
     this.buildTrees(coast);
     if (!coast) this.buildQixiaDecor();
     const dummy = new THREE.Object3D();
-    const hills = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 2), this.material('#92bcae'), 30);
-    for (let i = 0; i < 30; i++) {
-      const angle = i / 30 * Math.PI * 2;
-      dummy.position.set(130 + Math.sin(angle) * (650 + i % 4 * 50), 5, 20 + Math.cos(angle) * 690);
-      dummy.scale.set(100 + i % 3 * 25, 90 + i % 5 * 22, 130); dummy.rotation.set(0, i * .8, 0); dummy.updateMatrix(); hills.setMatrixAt(i, dummy.matrix);
+    if (!coast) this.buildMountainValley();
+    else {
+      const hills = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 2), this.material('#92bcae'), 30);
+      for (let i = 0; i < 30; i++) {
+        const angle = i / 30 * Math.PI * 2;
+        dummy.position.set(130 + Math.sin(angle) * (650 + i % 4 * 50), 5, 20 + Math.cos(angle) * 690);
+        dummy.scale.set(100 + i % 3 * 25, 90 + i % 5 * 22, 130); dummy.rotation.set(0, i * .8, 0); dummy.updateMatrix(); hills.setMatrixAt(i, dummy.matrix);
+      }
+      this.stage.add(hills);
     }
-    this.stage.add(hills);
     const clouds = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 2), new THREE.MeshBasicMaterial({ color: '#eff8f3' }), 48);
     for (let i = 0; i < 48; i++) {
       const angle = i / 48 * Math.PI * 2;
@@ -202,6 +205,95 @@ export class RaceWorld {
       roof.position.y = 4.6; roof.rotation.y = Math.PI / 4; roof.castShadow = true; tent.add(roof);
       this.box(tent, [5, 1.5, .12], [0, 1.8, 4.55], darkMat); this.stage.add(tent);
     }
+  }
+
+
+  // 樱花古境同款山谷：程序化地形围着赛道抬升成环山，赛道附近保持平坦
+  private buildMountainValley() {
+    // 赛道中心线采样 → 距离场，决定山从哪里开始隆起
+    const samples: Array<{ x: number; z: number }> = [];
+    for (let i = 0; i < 400; i++) { const p = this.track.sample(i / 400 * this.track.length); samples.push({ x: p.x, z: p.z }); }
+    const distToTrack = (x: number, z: number) => {
+      let m = Infinity;
+      for (const p of samples) { const dx = x - p.x, dz = z - p.z, d = dx * dx + dz * dz; if (d < m) m = d; }
+      return Math.sqrt(m);
+    };
+    // 赛道包围盒中心，环山围着它
+    let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+    for (const p of this.track.points) {
+      if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+      if (p.z < minZ) minZ = p.z; if (p.z > maxZ) maxZ = p.z;
+    }
+    const cx = (minX + maxX) / 2, cz = (minZ + maxZ) / 2;
+    const peaks: Array<[number, number, number, number]> = [];
+    for (let i = 0; i < 13; i++) {
+      const a = i / 13 * Math.PI * 2 + 0.3;
+      const r = 520 + Math.sin(i * 2.7) * 80;
+      peaks.push([cx + Math.cos(a) * r, cz + Math.sin(a) * r, 95 + Math.sin(i * 1.9) * 45, 160 + Math.sin(i * 3.3) * 40]);
+    }
+    const heightAt = (x: number, z: number, d: number) => {
+      const rise = THREE.MathUtils.smoothstep(d, 40, 130);
+      if (rise <= 0) return 0;
+      let h = 0;
+      for (const [px, pz, top, w] of peaks) h += top * Math.exp(-((x - px) ** 2 + (z - pz) ** 2) / (w * w));
+      const ridges = Math.sin(x * 0.019 + Math.sin(z * 0.011)) * Math.cos(z * 0.016) + Math.sin(x * 0.043 + z * 0.027) * 0.38;
+      h = (h + ridges * 9) * rise;
+      h += rise * Math.sin(x * 0.05) * Math.cos(z * 0.06) * 4; // 近处缓丘
+      return h;
+    };
+    const terrain = new THREE.PlaneGeometry(1500, 1500, 232, 212);
+    terrain.rotateX(-Math.PI / 2);
+    terrain.translate(cx, 0, cz);
+    const pos = terrain.attributes.position;
+    for (let i = 0; i < pos.count; i++) pos.setY(i, heightAt(pos.getX(i), pos.getZ(i), distToTrack(pos.getX(i), pos.getZ(i))));
+    terrain.computeVertexNormals();
+    const nor = terrain.attributes.normal;
+    const colors: number[] = [];
+    const deep = new THREE.Color('#2c493b'), meadow = new THREE.Color('#607858');
+    const rock = new THREE.Color('#81817d'), lawn = new THREE.Color('#5d7052');
+    const tint = new THREE.Color();
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i), z = pos.getZ(i), h = pos.getY(i);
+      const variation = (Math.sin(x * 0.4) * Math.cos(z * 0.31) + 1) * 0.5;
+      tint.copy(deep).lerp(meadow, variation * 0.45 + THREE.MathUtils.clamp(h / 140, 0, 0.3));
+      tint.lerp(rock, THREE.MathUtils.smoothstep(1 - nor.getY(i), 0.2, 0.5) * 0.75);
+      const d = distToTrack(x, z);
+      if (d < 60) tint.lerp(lawn, 0.3);
+      colors.push(tint.r, tint.g, tint.b);
+    }
+    terrain.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    const land = new THREE.Mesh(terrain, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 }));
+    land.receiveShadow = true;
+    this.stage.add(land);
+
+    // 草丛（古境草皮样式），撒在赛道外围的缓坡上
+    const blades: number[] = [];
+    for (let i = 0; i < 5; i++) {
+      const angle = i * 2.399, dx = Math.cos(angle), dz = Math.sin(angle);
+      blades.push(-dz * 0.08, 0, dx * 0.08, dz * 0.08, 0, -dx * 0.08, dx * 0.35, 0.5 + (i % 3) * 0.1, dz * 0.35);
+    }
+    const grassGeometry = new THREE.BufferGeometry();
+    grassGeometry.setAttribute('position', new THREE.Float32BufferAttribute(blades, 3));
+    grassGeometry.computeVertexNormals();
+    const mats: THREE.Matrix4[] = [];
+    const cols: THREE.Color[] = [];
+    const plant = new THREE.Object3D();
+    for (let i = 0; i < 2600; i++) {
+      const a = (i * 2.399) % (Math.PI * 2);
+      const r = 30 + ((i * 7919) % 100) / 100 * 90;
+      const x = cx + Math.cos(a) * r * 1.6, z = cz + Math.sin(a) * r * 1.4;
+      const d = distToTrack(x, z);
+      if (d < 24 || d > 110) continue;
+      plant.position.set(x, heightAt(x, z, d) - 0.04, z);
+      plant.rotation.y = a;
+      plant.scale.setScalar(0.35 + ((i * 104729) % 10) / 10 * 0.9);
+      plant.updateMatrix();
+      mats.push(plant.matrix.clone());
+      cols.push(new THREE.Color(i % 3 ? '#496044' : '#758160'));
+    }
+    const tufts = new THREE.InstancedMesh(grassGeometry, new THREE.MeshStandardMaterial({ side: THREE.DoubleSide, roughness: 1 }), mats.length);
+    mats.forEach((m, i) => { tufts.setMatrixAt(i, m); tufts.setColorAt(i, cols[i]); });
+    this.stage.add(tufts);
   }
 
   // 樱花古境风格的路旁景物：石板广场、青瓦院墙、红灯笼、水塘、落瓣
