@@ -165,6 +165,7 @@ export class RaceWorld {
     sign.position.set(0, 9.2, -.62); sign.rotation.y = Math.PI; finish.add(sign);
     this.stage.add(finish);
     this.buildTrees(coast);
+    if (!coast) this.buildQixiaDecor();
     const dummy = new THREE.Object3D();
     const hills = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 2), this.material('#92bcae'), 30);
     for (let i = 0; i < 30; i++) {
@@ -202,6 +203,150 @@ export class RaceWorld {
       this.box(tent, [5, 1.5, .12], [0, 1.8, 4.55], darkMat); this.stage.add(tent);
     }
   }
+
+  // 樱花古境风格的路旁景物：石板广场、青瓦院墙、红灯笼、水塘、落瓣
+  private buildQixiaDecor() {
+    const half = this.track.width / 2;
+    const jade = ['#34454b', '#475b61', '#53656b', '#3d525c'];
+    const stone = this.material('#9a939a', .9);
+    const red = this.material('#98534e', .72);
+    const wood = this.material('#593c3c', .8);
+
+    // ---- 起终点两侧：石板广场（四色石板错缝，古境庭院同款）----
+    const tiles: Array<{ m: THREE.Matrix4; c: THREE.Color }> = [];
+    const dummy = new THREE.Object3D();
+    const tileTones = ['#9a9397', '#a69e9e', '#a29d9a', '#908c97'].map(c => new THREE.Color(c));
+    for (const sideSign of [-1, 1]) {
+      for (let row = 0; row < 5; row++) {
+        for (let col = 0; col < 14; col++) {
+          const d = -32 + col * 4.6;
+          const p = this.track.sample(d, sideSign * (half + 2.4 + row * 4.55));
+          dummy.position.set(p.x, 0.16, p.z);
+          dummy.rotation.set(0, Math.atan2(p.tx, p.tz), 0);
+          dummy.scale.set(4.5, 0.32, 4.5);
+          dummy.updateMatrix();
+          tiles.push({ m: dummy.matrix.clone(), c: tileTones[(row * 11 + col * 7) % 4] });
+        }
+      }
+    }
+    const tileMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ roughness: .88 }), tiles.length);
+    tiles.forEach((t, i) => { tileMesh.setMatrixAt(i, t.m); tileMesh.setColorAt(i, t.c); });
+    tileMesh.receiveShadow = true;
+    this.stage.add(tileMesh);
+
+    // ---- 院墙段：石基 + 檐柱 + 青瓦压顶（放在弯道外侧）----
+    const wallSpots = [0.06, 0.14, 0.22, 0.38, 0.47, 0.63, 0.8, 0.9];
+    for (const t of wallSpots) {
+      const d = t * this.track.length;
+      const curvature = this.track.sample(d).curvature;
+      const side = Math.sign(curvature) || 1; // 弯道外侧
+      const p = this.track.sample(d, side * (half + 16));
+      const g = new THREE.Group();
+      g.position.set(p.x, 0, p.z); g.rotation.y = Math.atan2(p.tx, p.tz);
+      const base = new THREE.Mesh(new THREE.BoxGeometry(34, 2.6, 0.9), this.material('#788478', .9));
+      base.position.y = 1.3; base.castShadow = true; base.receiveShadow = true; g.add(base);
+      const cap = new THREE.Mesh(new THREE.BoxGeometry(34.6, 0.55, 1.5), this.material(jade[1], .6));
+      cap.position.y = 2.85; cap.castShadow = true; g.add(cap);
+      for (let i = -3; i <= 3; i++) {
+        const post = new THREE.Mesh(new THREE.BoxGeometry(1.5, 3.4, 1.1), stone);
+        post.position.set(i * 4.8, 1.7, 0); post.castShadow = true; g.add(post);
+        const postCap = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.4, 1.5), this.material(jade[0], .6));
+        postCap.position.set(i * 4.8, 3.6, 0); g.add(postCap);
+      }
+      this.stage.add(g);
+    }
+
+    // ---- 红柱灯笼沿路 ----
+    const lampMat = new THREE.MeshStandardMaterial({ color: '#ffe0bd', emissive: '#ffc292', emissiveIntensity: 1.1, roughness: .7 });
+    const lampCount = Math.floor(this.track.length / 130);
+    for (let i = 0; i < lampCount; i++) {
+      const d = i / lampCount * this.track.length;
+      const side = i % 2 ? 1 : -1;
+      const p = this.track.sample(d, side * (half + 5.5));
+      const g = new THREE.Group();
+      g.position.set(p.x, 0, p.z); g.rotation.y = Math.atan2(p.tx, p.tz);
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.28, 6.4, 10), red);
+      post.position.y = 3.2; post.castShadow = true; g.add(post);
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.22, 0.22), wood);
+      arm.position.set(0.6, 6.2, 0); g.add(arm);
+      const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.62, 1.15, 8), lampMat);
+      lamp.position.set(1.15, 5.5, 0); lamp.castShadow = true; g.add(lamp);
+      const cap = new THREE.Mesh(new THREE.ConeGeometry(0.75, 0.45, 8), this.material(jade[0], .6));
+      cap.position.set(1.15, 6.15, 0); g.add(cap);
+      this.stage.add(g);
+    }
+
+    // ---- 两座凉亭：石台 + 红柱 + 青瓦攒尖顶 ----
+    for (const [t, s] of [[0.3, 1], [0.68, -1]] as const) {
+      const p = this.track.sample(t * this.track.length, s * (half + 13));
+      const g = new THREE.Group();
+      g.position.set(p.x, 0, p.z); g.rotation.y = Math.atan2(p.tx, p.tz);
+      const floor = new THREE.Mesh(new THREE.CylinderGeometry(6.5, 7, 1, 8), stone);
+      floor.position.y = 0.5; floor.castShadow = true; floor.receiveShadow = true; g.add(floor);
+      for (const [px, pz] of [[-3.6, -3.6], [3.6, -3.6], [-3.6, 3.6], [3.6, 3.6]] as const) {
+        const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.5, 7.5, 10), red);
+        pillar.position.set(px, 4.7, pz); pillar.castShadow = true; g.add(pillar);
+      }
+      const roof = new THREE.Mesh(new THREE.ConeGeometry(8.4, 4.4, 4), this.material(jade[1], .55));
+      roof.position.y = 10.4; roof.rotation.y = Math.PI / 4; roof.castShadow = true; g.add(roof);
+      const finial = new THREE.Mesh(new THREE.SphereGeometry(0.55, 10, 8), this.material('#ad8d73', .5));
+      finial.position.y = 12.8; g.add(finial);
+      const bench = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.4, 1.6), wood);
+      bench.position.y = 1.4; g.add(bench);
+      this.stage.add(g);
+    }
+
+    // ---- 水塘 + 睡莲（古境水色）----
+    const waterMat = new THREE.MeshStandardMaterial({ color: '#607082', roughness: .22, metalness: .5, transparent: true, opacity: .95 });
+    for (const [t, s] of [[0.18, 1], [0.55, -1]] as const) {
+      const p = this.track.sample(t * this.track.length, s * (half + 30));
+      const water = new THREE.Mesh(new THREE.CircleGeometry(14, 48), waterMat);
+      water.rotation.x = -Math.PI / 2; water.position.set(p.x, 0.08, p.z);
+      this.stage.add(water);
+      for (let i = 0; i < 16; i++) {
+        const a = i / 16 * Math.PI * 2;
+        const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(1.1 + (i % 3) * 0.4, 0), this.material('#6d6a62', .9));
+        rock.position.set(p.x + Math.cos(a) * 14.6, 0.5, p.z + Math.sin(a) * 14.6);
+        rock.rotation.set(i * 0.7, i * 1.3, 0); rock.castShadow = true; this.stage.add(rock);
+      }
+      for (let i = 0; i < 7; i++) {
+        const a = i * 2.4, r = 3 + (i % 4) * 2.6;
+        const pad = new THREE.Mesh(new THREE.CircleGeometry(1.3, 9), this.material(i % 3 ? '#496b4d' : '#6f8151', .85));
+        pad.rotation.x = -Math.PI / 2;
+        pad.position.set(p.x + Math.cos(a) * r, 0.16, p.z + Math.sin(a) * r);
+        this.stage.add(pad);
+        if (i % 3 === 0) {
+          const bloom = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 6), this.material('#c39583', .6));
+          bloom.position.copy(pad.position).setY(0.5);
+          this.stage.add(bloom);
+        }
+      }
+    }
+
+    // ---- 路肩落瓣（真实花瓣几何，古境同款五色）----
+    const petalShape = new THREE.Shape();
+    petalShape.moveTo(0, -0.55);
+    petalShape.bezierCurveTo(-0.55, -0.18, -0.5, 0.55, -0.13, 0.48);
+    petalShape.lineTo(0, 0.32); petalShape.lineTo(0.13, 0.48);
+    petalShape.bezierCurveTo(0.5, 0.55, 0.55, -0.18, 0, -0.55);
+    const petalGeo = new THREE.ShapeGeometry(petalShape, 4);
+    const petalMat = new THREE.MeshStandardMaterial({ roughness: .9, side: THREE.DoubleSide, emissive: '#b86588', emissiveIntensity: .14 });
+    const petalTones = ['#fff1f1', '#f3cdda', '#edb8cc', '#ffe9ed', '#e2b0c4'].map(c => new THREE.Color(c));
+    const petals = Array.from({ length: 700 }, (_, i) => {
+      const d = (i * 2.189) % 1 * this.track.length;
+      const side = i % 2 ? 1 : -1;
+      const p = this.track.sample(d, side * (half + 2.2 + (i % 17) * 1.15));
+      dummy.position.set(p.x, 0.28, p.z);
+      dummy.rotation.set(-Math.PI / 2, 0, i * 1.7);
+      dummy.scale.setScalar(1.1 + (i % 5) * 0.35);
+      dummy.updateMatrix();
+      return { m: dummy.matrix.clone(), c: petalTones[i % 5] };
+    });
+    const petalMesh = new THREE.InstancedMesh(petalGeo, petalMat, petals.length);
+    petals.forEach((v, i) => { petalMesh.setMatrixAt(i, v.m); petalMesh.setColorAt(i, v.c); });
+    this.stage.add(petalMesh);
+  }
+
   private buildTrees(coast: boolean) {
     if (!coast) {
       // 樱花公路：古境同款樱花树（game 密度档，约 750 朵/棵）
