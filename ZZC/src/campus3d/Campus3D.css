@@ -1,0 +1,58 @@
+.c3d-page { --ink: #26333c; --cream: #fffdf5; --accent: #087f8f; min-height: 100dvh; display: flex; flex-direction: column;
+  font-family: var(--font-geist-sans), 'Microsoft YaHei', sans-serif; color: var(--ink);
+  background: linear-gradient(180deg, #dceef2 0%, #cfe3ea 60%, #c4dbe0 100%); }
+
+.c3d-header { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 16px 26px; }
+.c3d-back, .c3d-2d { font-size: 13px; font-weight: 700; color: #2c4a56; text-decoration: none; white-space: nowrap; }
+.c3d-back:hover, .c3d-2d:hover { color: var(--accent); }
+.c3d-title h1 { margin: 0; font-size: clamp(19px, 2.6vw, 27px); font-weight: 900; letter-spacing: -0.02em; }
+.c3d-title h1 span { color: var(--accent); }
+.c3d-title p { margin: 3px 0 0; font-size: 12px; font-weight: 600; color: #51707c; }
+
+.c3d-legend { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 26px 12px; }
+.c3d-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 800;
+  padding: 4px 11px; border-radius: 999px; background: #ffffffcc; border: 1px solid #ffffff90; }
+.c3d-chip i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.c3d-chip.subtle { color: #51707c; font-weight: 700; }
+
+.c3d-stage { position: relative; flex: 1; min-height: 520px; margin: 0 16px 14px; border-radius: 20px; overflow: hidden;
+  border: 1px solid #ffffffa8; box-shadow: 0 18px 60px #173a4b18; background: #cfe3ea; }
+.c3d-canvas { position: absolute; inset: 0; cursor: grab; }
+.c3d-canvas:active { cursor: grabbing; }
+
+.c3d-orbit { position: absolute; right: 16px; bottom: 16px; z-index: 4; padding: 8px 16px; border-radius: 999px;
+  border: 1px solid #ffffffa0; background: #ffffffd9; color: #2c4a56; font: inherit; font-size: 13px; font-weight: 800; cursor: pointer; }
+.c3d-orbit.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.c3d-loading { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 12px; align-items: center; justify-content: center;
+  color: #35525e; font-weight: 800; z-index: 3; background: #cfe3ea; }
+.c3d-loading .spin { animation: c3d-spin 1.6s linear infinite; }
+@keyframes c3d-spin { to { transform: rotate(360deg); } }
+
+.c3d-card { position: absolute; left: 16px; bottom: 16px; z-index: 4; width: min(300px, calc(100% - 32px));
+  background: #fffdf5f2; border: 1px solid #ffffffb3; border-radius: 16px; padding: 16px 18px; box-shadow: 0 10px 32px #173a4b22; }
+.c3d-card h2 { display: flex; align-items: center; gap: 7px; margin: 0 0 6px; font-size: 18px; font-weight: 900; }
+.c3d-card h2 svg { color: var(--accent); }
+.c3d-cat { display: inline-block; font-size: 11px; font-weight: 800; color: #4c6a74; background: #e7f0ee;
+  border-radius: 999px; padding: 2px 10px; margin-bottom: 8px; }
+.c3d-note { margin: 0 0 8px; font-size: 13px; line-height: 1.65; color: #3a545e; white-space: pre-wrap; }
+.c3d-map-link { font-size: 12px; font-weight: 800; color: var(--accent); text-decoration: none; }
+.c3d-close { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; display: grid; place-items: center;
+  border: 1px solid #d5e2df; border-radius: 50%; background: transparent; cursor: pointer; color: #4c6a74; }
+
+.c3d-failed { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px; text-align: center; color: #35525e; padding: 24px; }
+.c3d-failed h2 { margin: 0; font-size: 19px; } .c3d-failed p { margin: 0; font-size: 13px; }
+.c3d-failed button, .c3d-failed a { margin-top: 8px; padding: 8px 18px; border-radius: 999px; border: none;
+  background: var(--accent); color: #fff; font-weight: 800; cursor: pointer; text-decoration: none; display: inline-block; }
+
+.c3d-footer { display: flex; justify-content: center; gap: 20px; padding: 4px 0 18px; }
+.c3d-footer a { font-size: 12px; font-weight: 800; color: #4c6a74; text-decoration: none; }
+.c3d-footer a:hover { color: var(--accent); }
+
+@media (max-width: 720px) {
+  .c3d-header { flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px 16px; }
+  .c3d-2d { align-self: flex-end; margin-top: -22px; }
+  .c3d-legend { padding: 0 16px 10px; }
+  .c3d-stage { margin: 0 10px 10px; min-height: 62dvh; }
+}
