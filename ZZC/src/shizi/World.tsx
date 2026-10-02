@@ -112,7 +112,7 @@ function Atmosphere({ pose }: { pose: PoseId }) {
   return (
     <>
       <hemisphereLight ref={fill} args={['#ffe7c4', '#3a2c22', settings.ambient]} />
-      <directionalLight ref={sun} position={settings.position} intensity={settings.sunPower} color={settings.sun} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-4} shadow-camera-right={4} shadow-camera-top={4} shadow-camera-bottom={-4} shadow-camera-near={0.5} shadow-camera-far={24} shadow-bias={-0.00015} shadow-normalBias={0.02} />
+      <directionalLight ref={sun} position={settings.position} intensity={settings.sunPower} color={settings.sun} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-7} shadow-camera-right={7} shadow-camera-top={7} shadow-camera-bottom={-7} shadow-camera-near={0.5} shadow-camera-far={30} shadow-bias={-0.00015} shadow-normalBias={0.02} />
       <directionalLight position={[-3, 4, -2]} intensity={0.7} color="#ffd7a4" />
       <Environment resolution={128} frames={1}>
         <Lightformer form="rect" intensity={2.2} color="#fff3dc" position={[0, 5, 4]} rotation={[-Math.PI / 3, 0, 0]} scale={[8, 4, 1]} />
@@ -142,7 +142,7 @@ function Motes({ reduced, pose }: { reduced: boolean; pose: PoseId }) {
     seeds.forEach((p, i) => {
       const a = p.a + t * p.speed
       dummy.position.set(Math.cos(a) * p.r, p.y + Math.sin(t * 0.8 + p.a) * 0.18, Math.sin(a) * p.r * 0.72)
-      dummy.scale.setScalar(p.size)
+      dummy.scale.set(p.size, p.size * 0.6, p.size)
       dummy.updateMatrix()
       mesh.current!.setMatrixAt(i, dummy.matrix)
     })
@@ -151,8 +151,68 @@ function Motes({ reduced, pose }: { reduced: boolean; pose: PoseId }) {
   return (
     <instancedMesh ref={mesh} args={[undefined, undefined, seeds.length]} frustumCulled={false}>
       <sphereGeometry args={[1, 8, 6]} />
-      <meshBasicMaterial color={pose === 'glance' ? '#f0c48a' : '#ffe1a4'} transparent opacity={0.45} />
+      <meshBasicMaterial color={pose === 'glance' ? '#d9b8e8' : '#f4b8c8'} transparent opacity={0.55} />
     </instancedMesh>
+  )
+}
+
+function SakuraTree({ x, z, scale = 1 }: { x: number; z: number; scale?: number }) {
+  return (
+    <group position={[x, 0, z]} scale={scale}>
+      <mesh position={[0, 0.8, 0]} castShadow>
+        <cylinderGeometry args={[0.09, 0.15, 1.6, 8]} />
+        <meshStandardMaterial color="#5d4433" roughness={0.85} />
+      </mesh>
+      <mesh position={[0.08, 1.62, 0]} castShadow>
+        <icosahedronGeometry args={[0.72, 1]} />
+        <meshStandardMaterial color="#e39ec0" roughness={0.9} flatShading />
+      </mesh>
+      <mesh position={[-0.42, 1.86, 0.18]} castShadow>
+        <icosahedronGeometry args={[0.48, 1]} />
+        <meshStandardMaterial color="#f0b9cd" roughness={0.9} flatShading />
+      </mesh>
+      <mesh position={[0.4, 1.92, -0.2]} castShadow>
+        <icosahedronGeometry args={[0.42, 1]} />
+        <meshStandardMaterial color="#d790b4" roughness={0.9} flatShading />
+      </mesh>
+      <mesh position={[0.05, 2.3, 0.05]} castShadow>
+        <icosahedronGeometry args={[0.4, 1]} />
+        <meshStandardMaterial color="#f3c6d6" roughness={0.9} flatShading />
+      </mesh>
+    </group>
+  )
+}
+
+function Garden() {
+  const props = useMemo(() => ({
+    trees: [
+      { x: -3.4, z: -2.3, s: 1.15 }, { x: 3.6, z: -2.7, s: 1.3 }, { x: -4.3, z: 1.7, s: 1 },
+      { x: 4.2, z: 2.0, s: 0.92 }, { x: 0.8, z: -4.7, s: 1.18 }, { x: -1.8, z: 4.4, s: 0.85 },
+    ],
+    bushes: [
+      { x: -2.3, z: 1.9, s: 0.42 }, { x: 2.4, z: 1.6, s: 0.36 }, { x: -2.8, z: -0.6, s: 0.3 },
+      { x: 2.9, z: -0.9, s: 0.4 }, { x: 1.4, z: 2.8, s: 0.3 }, { x: -1.2, z: 3.0, s: 0.34 },
+    ],
+    stones: [
+      { x: 1.9, z: 3.4, s: 0.22 }, { x: -3.1, z: 3.1, s: 0.16 }, { x: 5.0, z: 0.3, s: 0.19 },
+    ],
+  }), [])
+  return (
+    <group>
+      {props.trees.map(t => <SakuraTree key={t.x + 'x' + t.z} x={t.x} z={t.z} scale={t.s} />)}
+      {props.bushes.map(b => (
+        <mesh key={b.x + 'b' + b.z} position={[b.x, b.s * 0.55, b.z]} scale={[b.s, b.s * 0.75, b.s]} castShadow>
+          <icosahedronGeometry args={[1, 1]} />
+          <meshStandardMaterial color="#3f5340" roughness={0.95} flatShading />
+        </mesh>
+      ))}
+      {props.stones.map((st, i) => (
+        <mesh key={i} position={[st.x, st.s * 0.5, st.z]} rotation={[i * 0.7, i * 1.3, 0]} scale={st.s} castShadow receiveShadow>
+          <dodecahedronGeometry args={[1, 0]} />
+          <meshStandardMaterial color="#6d6a62" roughness={0.9} flatShading />
+        </mesh>
+      ))}
+    </group>
   )
 }
 
@@ -160,10 +220,16 @@ function Stage({ pose, reduced }: { pose: PoseId; reduced: boolean }) {
   const lamp = poses[pose].lamp
   return (
     <group>
+      {/* 草地：外圈到雾里，内圈稍亮 */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-        <circleGeometry args={[3.6, 72]} />
-        <meshStandardMaterial color="#4a4036" roughness={0.92} />
+        <circleGeometry args={[11, 72]} />
+        <meshStandardMaterial color="#41503c" roughness={0.96} />
       </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.006, 0]} receiveShadow>
+        <circleGeometry args={[3.4, 64]} />
+        <meshStandardMaterial color="#4b5c42" roughness={0.95} />
+      </mesh>
+      <Garden />
       <mesh position={[0, 0.07, 0]} receiveShadow castShadow>
         <cylinderGeometry args={[1.7, 1.86, 0.14, 72]} />
         <meshStandardMaterial color="#5c4e42" roughness={0.84} />
@@ -173,7 +239,7 @@ function Stage({ pose, reduced }: { pose: PoseId; reduced: boolean }) {
         <meshStandardMaterial color="#e2c07a" roughness={0.38} metalness={0.25} emissive="#a87830" emissiveIntensity={0.15} />
       </mesh>
       {([-1, 1] as const).map(side => (
-        <group key={side} position={[side * 2.4, 0, -1.35]}>
+        <group key={side} position={[side * 2.6, 0, -1.5]}>
           <mesh position={[0, 0.42, 0]} castShadow>
             <cylinderGeometry args={[0.055, 0.075, 0.84, 8]} />
             <meshStandardMaterial color="#5a4332" roughness={0.7} />
