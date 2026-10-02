@@ -116,6 +116,11 @@ function useTuftGeometry() {
   })
 }
 
+// Torso with a warm gradient: deeper orange at the haunches, brighter at the shoulders.
+function useBodyGeometry() {
+  return useDisposable(() => paintGradient(new T.SphereGeometry(1, 48, 36), '#e8840f', '#ffb43c', -1, 1))
+}
+
 // Slender tail that sweeps outward and up, ending in a spade-shaped tuft.
 function useTailCurve() {
   return useMemo(() => new T.CatmullRomCurve3([
@@ -368,6 +373,7 @@ export default function LionModel({ pose, reduced, selected, onSelect }: { pose:
   const clock = useRef(0)
   const hop = useRef(0)
   const mane = useManeGeometry()
+  const body = useBodyGeometry()
   const face = useFaceGeometry()
   const tuft = useTuftGeometry()
   const tailCurve = useTailCurve()
@@ -406,6 +412,12 @@ export default function LionModel({ pose, reduced, selected, onSelect }: { pose:
         <mesh geometry={face} position={[0, -0.02, 0.2]} scale={[0.72, 0.62, 0.55]} castShadow>
           <Glossy color="#ffffff" vertexColors roughness={0.5} emissive={selected === 2 ? '#ffd8bf' : undefined} emissiveIntensity={selected === 2 ? 0.08 : 0} />
         </mesh>
+        {([-1, 1] as const).flatMap(side => [-0.06, 0, 0.06].map(dy => (
+          <mesh key={side + '' + dy} position={[side * 0.46, -0.16 + dy * 0.5, 0.6]} scale={0.013}>
+            <sphereGeometry args={[1, 8, 6]} />
+            <meshStandardMaterial color="#d99a5e" roughness={0.6} />
+          </mesh>
+        )))}
         <Ear side={-1} />
         <Ear side={1} />
         <Eye x={-0.24} />
@@ -435,9 +447,13 @@ export default function LionModel({ pose, reduced, selected, onSelect }: { pose:
         <sphereGeometry args={[1, 24, 16]} />
         <Glossy color={ORANGE} />
       </mesh>
-      <mesh position={[0, 0.86, 0]} scale={[0.52, 0.55, 0.46]} castShadow receiveShadow>
-        <sphereGeometry args={[1, 48, 36]} />
-        <Glossy color={selected === 3 ? '#ffb02a' : ORANGE} />
+      <mesh geometry={body} position={[0, 0.86, 0]} scale={[0.52, 0.55, 0.46]} castShadow receiveShadow>
+        <Glossy color="#ffffff" vertexColors emissive={selected === 3 ? '#ffcf8a' : undefined} emissiveIntensity={selected === 3 ? 0.1 : 0} />
+      </mesh>
+      {/* 奶白肚皮，托在院徽下方 */}
+      <mesh position={[0, 0.74, 0.235]} scale={[0.34, 0.4, 0.26]} castShadow>
+        <sphereGeometry args={[1, 36, 28]} />
+        <Glossy color={CREAM} roughness={0.5} />
       </mesh>
       <Emblem />
 
@@ -451,6 +467,10 @@ export default function LionModel({ pose, reduced, selected, onSelect }: { pose:
             <sphereGeometry args={[1, 24, 18]} />
             <Glossy color="#fff7ef" roughness={0.42} />
           </mesh>
+          <mesh position={[-side * 0.115, -0.445, 0.05]} scale={0.058} castShadow>
+            <sphereGeometry args={[1, 16, 12]} />
+            <Glossy color="#fff7ef" roughness={0.42} />
+          </mesh>
         </group>
       ))}
 
@@ -460,6 +480,10 @@ export default function LionModel({ pose, reduced, selected, onSelect }: { pose:
             <capsuleGeometry args={[0.115, 0.24, 6, 14]} />
             <Glossy color={limb ? '#ffb83c' : ORANGE} />
           </mesh>
+          <mesh position={[0, -0.235, 0.015]} scale={[0.14, 0.08, 0.15]} castShadow>
+            <sphereGeometry args={[1, 20, 14]} />
+            <Glossy color={ORANGE} />
+          </mesh>
           <group ref={side < 0 ? kneeL : kneeR} position={[0, -0.26, 0]}>
             <Foot />
           </group>
@@ -467,6 +491,10 @@ export default function LionModel({ pose, reduced, selected, onSelect }: { pose:
       ))}
 
       <group ref={tail} position={[0.28, 0.72, -0.36]}>
+        <mesh scale={[0.1, 0.09, 0.09]} castShadow>
+          <sphereGeometry args={[1, 18, 14]} />
+          <Glossy color={ORANGE_DEEP} />
+        </mesh>
         <mesh castShadow>
           <tubeGeometry args={[tailCurve, 36, 0.045, 10, false]} />
           <Glossy color={ORANGE_DEEP} />
