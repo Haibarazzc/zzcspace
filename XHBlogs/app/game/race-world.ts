@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Race, type Racer, type Track, wrap } from './race-model';
+import { buildSakuraGrove } from './sakuraGrove';
 
 type CarVisual = { group: THREE.Group; body: THREE.Group; wheels: THREE.Mesh[]; jets: THREE.Mesh[]; shadow: THREE.Mesh; label?: THREE.Sprite };
 type Particle = { mesh: THREE.Mesh; velocity: THREE.Vector3; life: number; maxLife: number };
@@ -202,6 +203,17 @@ export class RaceWorld {
     }
   }
   private buildTrees(coast: boolean) {
+    if (!coast) {
+      // 樱花公路：古境同款樱花树（game 密度档，约 750 朵/棵）
+      const count = Math.floor(this.track.length / 26);
+      const specs = Array.from({ length: count }, (_, i) => {
+        const side = i % 2 ? 1 : -1;
+        const p = this.track.sample(i / count * this.track.length, side * (this.track.width / 2 + 9 + (Math.sin(i * 78.23) + 1) * 5));
+        return { x: p.x, z: p.z, seed: i * 13 + 7, scale: 2.2 + Math.sin(i * 32.1) * 0.45 };
+      });
+      this.stage.add(buildSakuraGrove(specs));
+      return;
+    }
     const count = Math.floor(this.track.length / 13) * 2;
     const trunks = new THREE.InstancedMesh(new THREE.CylinderGeometry(.23, .48, 5, 6), this.material('#967e71'), count);
     const crowns = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 1), this.material('#f3abc2'), count * 3);
