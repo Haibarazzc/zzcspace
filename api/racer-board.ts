@@ -36,7 +36,7 @@ async function redis(command: (string | number)[]): Promise<unknown> {
 function validConfig(c: BoardConfig, requireAuto = false) {
   return !!c && typeof c === 'object'
     && (c.track === 'sakura' || c.track === 'coast')
-    && Number.isInteger(c.car) && c.car >= 0 && c.car < CARS.length
+    && Number.isInteger(c.car) && c.car >= 0 && c.car < 3
     && (c.mode === 'race' || c.mode === 'time')
     && Number.isInteger(c.laps) && c.laps >= 1 && c.laps <= 3
     && Number.isInteger(c.difficulty) && c.difficulty >= 0 && c.difficulty <= 2
