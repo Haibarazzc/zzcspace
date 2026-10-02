@@ -2,7 +2,6 @@
 // 服务端用与游戏完全相同的确定性模拟重放对局输入，验证通过才入库。
 // No npm dependencies; Redis credentials stay on the server.
 import { createHash, randomUUID } from 'node:crypto';
-import { Race, TRACK_INFO, CARS } from '../XHBlogs/app/game/race-model';
 
 type Request = { method?: string; url?: string; headers?: Record<string, string | string[] | undefined>; body?: unknown };
 type Response = { setHeader: (key: string, value: string) => void; status: (code: number) => Response; send: (body: string) => void };
@@ -65,7 +64,13 @@ if count == 1 then redis.call('EXPIRE', KEYS[1], 60) end
 return count`;
 
 // 导出给测试：重放并返回验证后的成绩（秒），失败返回 null
-export function verifyReplay(config: BoardConfig, events: unknown): { time: number; place: number } | null {
+let modelPromise: Promise<{ Race: typeof import('../XHBlogs/app/game/race-model').Race }> | null = null;
+async function loadModel() {
+  if (!modelPromise) modelPromise = import('../XHBlogs/app/game/race-model');
+  return modelPromise;
+}
+
+export async function verifyReplay(config: BoardConfig, events: unknown): Promise<{ time: number; place: number } | null> {
   if (!validConfig(config, true) || !Array.isArray(events) || events.length === 0 || events.length > 60000) return null;
   for (const event of events) {
     if (!event || typeof event !== 'object') return null;
@@ -77,6 +82,7 @@ export function verifyReplay(config: BoardConfig, events: unknown): { time: numb
   for (let i = 1; i < events.length; i++) {
     if ((events[i] as ReplayEvent).t < (events[i - 1] as ReplayEvent).t) return null;
   }
+  const { Race } = await loadModel();
   const race = new Race({ track: config.track as 'sakura' | 'coast', car: config.car, mode: config.mode as 'race' | 'time',
     laps: config.laps, difficulty: config.difficulty, autoAccelerate: config.autoAccelerate });
   race.start();
@@ -152,7 +158,7 @@ export default async function handler(req: Request, res: Response) {
     const session: Session = JSON.parse(raw);
     if (session.saved) return json(res, 200, session.saved);
 
-    const result = verifyReplay(body.config as BoardConfig, body.events);
+    const result = await verifyReplay(body.config as BoardConfig, body.events);
     if (!result) return json(res, 422, { error: '对局校验未通过。' });
     // 不可能比模拟时间更快跑完（留 3 秒余量覆盖倒计时提交间隔）
     if (Date.now() - session.startedAt + 3000 < result.time * 1000) return json(res, 422, { error: '对局校验未通过。' });
@@ -164,7 +170,7 @@ export default async function handler(req: Request, res: Response) {
     const rank = after.findIndex(row => { try { return JSON.parse(row).id === session.playerId; } catch { return false; } }) + 1;
     const payload = { rank: rank || undefined, time: result.time };
     return json(res, 200, Number(saved) === 2 ? (session.saved as object) : payload);
-  } catch {
-    return json(res, 503, { error: '排行榜暂时连接不上，请稍后重试。' });
+  } catch (err) {
+    return json(res, 500, { error: '排行榜暂时连接不上，请稍后重试。', detail: String((err as Error)?.stack || err) });
   }
 }
