@@ -119,13 +119,12 @@ export default function RacerGame() {
             boosts: race.boostsUsed, topSpeed: race.topSpeed, record: newBest,
             rows: race.order.map(r => ({ name: r.name, color: r.color, time: r.finishedAt, player: r.id === 0 })) });
           clearInput(); audio!.beep(1047);
-        }
-        // 结算后拉取当前配置的全网排行（练习模式除外）
-        if (race.phase === 'finished' && race.config.mode !== 'practice') {
-          const cfg = race.config;
-          setBoard(null); setBoardNote(''); setSubmitState(sessionRef.current ? 'idle' : 'hidden');
-          setSubmitNote(sessionRef.current ? '' : '本局缺少有效会话，无法上榜');
-          fetchBoard(cfg).then(b => setBoard(b)).catch(() => setBoardNote('排行榜暂时拿不到，稍后再试'));
+          // 冲线只发生一次：在同一处一次性拉取榜单，避免渲染循环里反复清空重拉导致闪烁
+          if (race.config.mode !== 'practice') {
+            setBoard(null); setBoardNote(''); setSubmitState(sessionRef.current ? 'idle' : 'hidden');
+            setSubmitNote(sessionRef.current ? '' : '本局缺少有效会话，无法上榜');
+            fetchBoard(race.config).then(b => setBoard(b)).catch(() => setBoardNote('排行榜暂时拿不到，稍后再试'));
+          }
         }
         if (now - lastUi > 70 || race.phase !== previousPhase) {
           const p = race.player, leader = race.order[0];
