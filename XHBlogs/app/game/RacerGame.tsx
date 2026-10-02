@@ -17,6 +17,30 @@ function readRecord(config: RaceConfig) {
   try { const v = Number(localStorage.getItem(recordKey(config))); return Number.isFinite(v) && v > 0 ? v : null; } catch { return null; }
 }
 
+// ===== 全网排行榜 =====
+interface BoardEntry { name: string; time: number; date: string; rank?: number }
+type ReplayEvent = { t: number; r?: 1; s?: number; a?: 0 | 1; b?: 0 | 1; d?: 0 | 1; g?: 0 | 1 };
+function loadPlayerId() {
+  try {
+    let id = localStorage.getItem('racer-player-id');
+    if (!id || !/^[a-f0-9-]{36}$/i.test(id)) { id = crypto.randomUUID(); localStorage.setItem('racer-player-id', id); }
+    return id;
+  } catch { return crypto.randomUUID(); }
+}
+async function apiBoard(body: Record<string, unknown>) {
+  const res = await fetch('/api/racer-board', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data as { error?: string }).error || `HTTP ${res.status}`);
+  return data as Record<string, unknown>;
+}
+async function fetchBoard(config: RaceConfig): Promise<{ entries: BoardEntry[]; total: number }> {
+  const q = new URLSearchParams({ track: config.track, car: String(config.car), mode: config.mode, laps: String(config.laps), difficulty: String(config.difficulty) });
+  const res = await fetch('/api/racer-board?' + q);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return data as { entries: BoardEntry[]; total: number };
+}
+
 export default function RacerGame() {
   const hostRef = useRef<HTMLDivElement>(null);
   const shellRef = useRef<HTMLElement>(null);
@@ -42,6 +66,18 @@ export default function RacerGame() {
   const [result, setResult] = useState<Result | null>(null);
   const [retry, setRetry] = useState(0);
   const resultSaved = useRef(false);
+  // 排行榜相关
+  const replayRef = useRef<ReplayEvent[]>([]);
+  const lastInputKey = useRef('');
+  const sessionRef = useRef<string | null>(null);
+  const [board, setBoard] = useState<{ entries: BoardEntry[]; total: number } | null>(null);
+  const [boardNote, setBoardNote] = useState('');
+  const [boardBusy, setBoardBusy] = useState(false);
+  const [playerName, setPlayerName] = useState('');
+  const [submitState, setSubmitState] = useState<'hidden' | 'idle' | 'busy' | 'done' | 'error'>('hidden');
+  const [submitNote, setSubmitNote] = useState('');
+  const [garageBoard, setGarageBoard] = useState<{ entries: BoardEntry[]; total: number } | null>(null);
+  const [garageBoardNote, setGarageBoardNote] = useState('');
   const clearInput = useCallback(() => { keys.current.clear(); touches.current.clear(); boostQueued.current = false; }, []);
 
   useEffect(() => {
@@ -63,6 +99,7 @@ export default function RacerGame() {
       world = new RaceWorld(canvas, host, race, window.matchMedia('(prefers-reduced-motion: reduce)').matches);
       audio = new RaceAudio(); audioRef.current = audio; worldRef.current = world;
       setReady(true); setSound(false); setHud(EMPTY_HUD); setResult(null); setBest(readRecord(configRef.current));
+      refreshGarageBoard(configRef.current);
       let last = performance.now(), lastUi = 0, previousCount = 4, previousPhase: Phase = 'garage';
       const frame = (now: number) => {
         if (cancelled) return;
@@ -73,6 +110,12 @@ export default function RacerGame() {
           accelerate: pressed('ArrowUp') || pressed('KeyW'), brake: pressed('ArrowDown') || pressed('KeyS'),
           drift: pressed('ShiftLeft') || pressed('ShiftRight'), boost: pressed('Space') || boostQueued.current };
         boostQueued.current = false;
+        // 录制操作事件（输入变化时），供服务端重放校验成绩
+        const inputKey = `${input.steer}|${+input.accelerate}${+input.brake}${+input.drift}${+input.boost}`;
+        if (race.phase !== 'garage' && inputKey !== lastInputKey.current) {
+          lastInputKey.current = inputKey;
+          replayRef.current.push({ t: race.time, s: input.steer, a: +input.accelerate as 0 | 1, b: +input.brake as 0 | 1, d: +input.drift as 0 | 1, g: +input.boost as 0 | 1 });
+        }
         race.update(dt, input); world!.render(race, dt, pressed('KeyQ')); audio!.update(race);
         const countdown = Math.ceil(race.countdown);
         if (race.phase === 'countdown' && countdown !== previousCount) { audio!.beep(countdown === 0 ? 880 : 440); previousCount = countdown; }
@@ -85,6 +128,13 @@ export default function RacerGame() {
             boosts: race.boostsUsed, topSpeed: race.topSpeed, record: newBest,
             rows: race.order.map(r => ({ name: r.name, color: r.color, time: r.finishedAt, player: r.id === 0 })) });
           clearInput(); audio!.beep(1047);
+        }
+        // 结算后拉取当前配置的全网排行（练习模式除外）
+        if (race.phase === 'finished' && race.config.mode !== 'practice') {
+          const cfg = race.config;
+          setBoard(null); setBoardNote(''); setSubmitState(sessionRef.current ? 'idle' : 'hidden');
+          setSubmitNote(sessionRef.current ? '' : '本局缺少有效会话，无法上榜');
+          fetchBoard(cfg).then(b => setBoard(b)).catch(() => setBoardNote('排行榜暂时拿不到，稍后再试'));
         }
         if (now - lastUi > 70 || race.phase !== previousPhase) {
           const p = race.player, leader = race.order[0];
@@ -109,11 +159,44 @@ export default function RacerGame() {
   const configure = (patch: Partial<RaceConfig>) => {
     const next = { ...configRef.current, ...patch }; configRef.current = next; setConfig(next);
     const race = new Race(next); raceRef.current = race; worldRef.current?.rebuild(race); setBest(readRecord(next));
+    refreshGarageBoard(next);
+  };
+  const refreshGarageBoard = (cfg: RaceConfig) => {
+    if (cfg.mode === 'practice') { setGarageBoard(null); setGarageBoardNote(''); return; }
+    setGarageBoardNote('');
+    fetchBoard(cfg).then(setGarageBoard).catch(() => { setGarageBoard(null); setGarageBoardNote('排行榜暂时拿不到'); });
+  };
+  const submitScore = async () => {
+    const race = raceRef.current;
+    if (!race || !sessionRef.current || submitState === 'busy' || submitState === 'done') return;
+    const name = playerName.trim();
+    if (!name || [...name].length > 12) { setSubmitState('error'); setSubmitNote('昵称请填 1～12 个字符'); return; }
+    setSubmitState('busy'); setSubmitNote('校验中…');
+    try {
+      const data = await apiBoard({ action: 'finish', sessionId: sessionRef.current, name,
+        config: race.config, events: replayRef.current });
+      try { localStorage.setItem('racer-name', name); } catch { /* 可选 */ }
+      setSubmitState('done');
+      setSubmitNote(data.rank ? `已上榜 · 当前第 ${data.rank} 名` : '已上榜');
+      fetchBoard(race.config).then(setBoard).catch(() => {});
+    } catch (err) {
+      setSubmitState('error');
+      setSubmitNote(err instanceof Error ? err.message : '提交失败，请稍后再试');
+    }
   };
   const start = () => {
     if (!ready) return;
     clearInput(); resultSaved.current = false; setResult(null); setHelp(false);
+    replayRef.current = []; lastInputKey.current = ''; sessionRef.current = null;
+    setBoard(null); setBoardNote(''); setSubmitState('hidden'); setSubmitNote('');
+    try { setPlayerName(localStorage.getItem('racer-name') || ''); } catch { /* 可选 */ }
     raceRef.current?.start(); shellRef.current?.focus();
+    // 会话在后台异步创建；网络失败时结算页会提示无法上榜
+    if (raceRef.current && raceRef.current.config.mode !== 'practice') {
+      apiBoard({ action: 'start', playerId: loadPlayerId() })
+        .then(data => { sessionRef.current = String(data.sessionId || '') || null; })
+        .catch(() => { sessionRef.current = null; });
+    }
   };
   const garage = () => { clearInput(); raceRef.current?.reset(); setResult(null); setHelp(false); };
   const pause = () => { clearInput(); raceRef.current?.pause(); };
@@ -168,7 +251,7 @@ export default function RacerGame() {
           if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'ShiftLeft', 'ShiftRight', 'KeyQ', 'KeyR'].includes(e.code)) {
             e.preventDefault(); keys.current.add(e.code);
             if (e.code === 'Space' && !e.repeat) boostQueued.current = true;
-            if (e.code === 'KeyR' && !e.repeat) race.recover();
+            if (e.code === 'KeyR' && !e.repeat) { race.recover(); replayRef.current.push({ t: race.time, r: 1 }); }
           }
         }} onKeyUp={e => { keys.current.delete(e.code); }}
         onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) { raceRef.current?.pause(); clearInput(); } }}>
@@ -210,6 +293,14 @@ export default function RacerGame() {
             <label className={styles.auto}><input type="checkbox" checked={config.autoAccelerate} onChange={e => configure({ autoAccelerate: e.target.checked })} /><span>自动油门 <small>专注转向和漂移</small></span></label>
             <button className={styles.primary} onClick={start}>{config.mode === 'practice' ? '进入练习' : '开始比赛'}<ArrowUpRight size={22} /></button>
             <div className={styles.record}><Trophy size={14} />{config.mode === 'practice' ? '不限圈数，自由熟悉赛道' : best ? `本机纪录 ${formatTime(best)}` : '第一场纪录，等你来写。'}</div>
+            {config.mode !== 'practice' && (garageBoard ? <div className={styles.garageBoard}>
+              <div className={styles.boardHead}><h3><Trophy size={14} /> 全网 TOP {Math.min(5, garageBoard.entries.length)}</h3>
+                <button className={styles.boardRefresh} onClick={() => refreshGarageBoard(configRef.current)} aria-label="刷新排行榜">刷新</button></div>
+              <ol className={styles.boardList}>
+                {garageBoard.entries.slice(0, 5).map(e => <li key={e.rank}><b>{e.rank}</b><span>{e.name}</span><em>{formatTime(e.time)}</em></li>)}
+                {garageBoard.entries.length === 0 && <li className={styles.boardEmpty}>还没有人上榜。</li>}
+              </ol>
+            </div> : garageBoardNote ? <div className={styles.garageBoard}><p className={styles.boardNote}>{garageBoardNote}</p></div> : null)}
           </div>
         </div>}
 
@@ -231,7 +322,27 @@ export default function RacerGame() {
 
         {ready && paused && <div className={styles.overlay}><div className={styles.dialog} role="dialog" aria-modal="true" aria-labelledby="pause-title"><span className={styles.eyebrow}>TAKE A BREATH</span><h2 id="pause-title">风景等你，<br />比赛也是。</h2><p>比赛已暂停，计时与对手都已停止。</p><button className={styles.primary} onClick={resume}>继续比赛 <Play size={18} /></button><div className={styles.dialogActions}><button onClick={start}><RotateCcw size={15} />重新发车</button><button onClick={garage}><ArrowLeft size={15} />返回车库</button></div><button className={styles.textButton} onClick={() => setHelp(v => !v)}>查看操作说明</button>{help && <div className={styles.pauseHelp}>WASD / 方向键驾驶<br />Shift + 方向键漂移，松开小喷<br />空格释放氮气 · R 回正 · Q 后视</div>}</div></div>}
 
-        {ready && hud.phase === 'finished' && result && <div className={styles.overlay}><div className={`${styles.dialog} ${styles.result}`} role="dialog" aria-modal="true" aria-labelledby="result-title"><div className={styles.resultHeading}><Trophy size={34} /><span>{result.record ? '刷新本机纪录' : 'FINISH / 完成比赛'}</span></div><h2 id="result-title">{result.total > 1 ? `第 ${result.place} 名` : '漂亮的一圈。'}</h2><div className={styles.resultTime}>{formatTime(result.time)}</div><p>{TRACK_INFO[config.track].name} · {config.laps} 圈 · {currentCar.name}</p><div className={styles.resultColumns}><div><h3>比赛排名</h3><ol>{result.rows.map((r, i) => <li key={r.name} className={r.player ? styles.resultYou : ''}><b>{i + 1}</b><span>{r.name}</span><em>{r.time !== null ? formatTime(r.time) : '未冲线'}</em></li>)}</ol></div><div><h3>你的表现</h3>{result.laps.map((time, i) => <div className={styles.lapResult} key={i}><span>第 {i + 1} 圈</span><b>{formatTime(time)}</b></div>)}<div className={styles.lapResult}><span>最高时速</span><b>{Math.round(result.topSpeed)} km/h</b></div><div className={styles.lapResult}><span>漂移 / 氮气</span><b>{result.drift.toFixed(1)}s / {result.boosts} 次</b></div></div></div><button className={styles.primary} onClick={start}>再跑一场 <RotateCcw size={18} /></button><button className={styles.textButton} onClick={garage}>返回车库，换条赛道</button></div></div>}
+        {ready && hud.phase === 'finished' && result && <div className={styles.overlay}><div className={`${styles.dialog} ${styles.result}`} role="dialog" aria-modal="true" aria-labelledby="result-title"><div className={styles.resultHeading}><Trophy size={34} /><span>{result.record ? '刷新本机纪录' : 'FINISH / 完成比赛'}</span></div><h2 id="result-title">{result.total > 1 ? `第 ${result.place} 名` : '漂亮的一圈。'}</h2><div className={styles.resultTime}>{formatTime(result.time)}</div><p>{TRACK_INFO[config.track].name} · {config.laps} 圈 · {currentCar.name}</p><div className={styles.resultColumns}><div><h3>比赛排名</h3><ol>{result.rows.map((r, i) => <li key={r.name} className={r.player ? styles.resultYou : ''}><b>{i + 1}</b><span>{r.name}</span><em>{r.time !== null ? formatTime(r.time) : '未冲线'}</em></li>)}</ol></div><div><h3>你的表现</h3>{result.laps.map((time, i) => <div className={styles.lapResult} key={i}><span>第 {i + 1} 圈</span><b>{formatTime(time)}</b></div>)}<div className={styles.lapResult}><span>最高时速</span><b>{Math.round(result.topSpeed)} km/h</b></div><div className={styles.lapResult}><span>漂移 / 氮气</span><b>{result.drift.toFixed(1)}s / {result.boosts} 次</b></div></div></div>
+              {config.mode !== 'practice' && <div className={styles.board}>
+                <div className={styles.boardHead}><h3><Trophy size={15} /> 全网排行</h3>
+                  {submitState === 'idle' && <div className={styles.boardSubmit}>
+                    <input value={playerName} maxLength={12} placeholder="你的昵称" aria-label="排行榜昵称"
+                      onChange={e => setPlayerName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') submitScore(); e.stopPropagation(); }} />
+                    <button onClick={submitScore}>提交成绩</button>
+                  </div>}
+                  {submitState === 'busy' && <span className={styles.boardNote}>校验中…</span>}
+                  {submitState === 'done' && <span className={styles.boardNoteOk}>{submitNote}</span>}
+                  {submitState === 'error' && <span className={styles.boardNoteErr}>{submitNote}</span>}
+                  {submitState === 'hidden' && <span className={styles.boardNote}>{submitNote}</span>}
+                </div>
+                {board ? <ol className={styles.boardList}>
+                  {board.entries.map(e => <li key={e.rank}><b>{e.rank}</b><span>{e.name}</span><em>{formatTime(e.time)}</em></li>)}
+                  {board.entries.length === 0 && <li className={styles.boardEmpty}>虚位以待，第一个上榜的就是你。</li>}
+                </ol> : <p className={styles.boardNote}>{boardNote || '正在拉取排行榜…'}</p>}
+                {board && board.total > board.entries.length && <p className={styles.boardNote}>共 {board.total} 条成绩</p>}
+                <p className={styles.boardHint}>成绩由服务端重放你的操作校验，无法伪造</p>
+              </div>}
+              <button className={styles.primary} onClick={start}>再跑一场 <RotateCcw size={18} /></button><button className={styles.textButton} onClick={garage}>返回车库，换条赛道</button></div></div>}
       </section>
       <div className={styles.bottomBar}><div className={styles.keyboardHelp}><span><kbd>↑</kbd><kbd>↓</kbd> 油门 / 刹车</span><span><kbd>←</kbd><kbd>→</kbd> 转向</span><span><kbd>Shift</kbd> 漂移</span><span><kbd>Space</kbd> 氮气</span><span><kbd>P</kbd> 暂停</span><span><kbd>R</kbd> 回正</span><span><kbd>Q</kbd> 后视</span></div><label className={styles.quality}><Gauge size={14} /><select aria-label="画面质量" value={quality} onChange={e => { const q = e.target.value as 'high' | 'low'; setQuality(q); worldRef.current?.setQuality(q); }}><option value="high">精致画面</option><option value="low">流畅优先</option></select></label></div>
       <div className={styles.notes}><span>弯前转向 + 漂移，出弯松开触发小喷；集满一格获得氮气，最多存两瓶。</span><span>单机竞速 · AI 对手 · 纪录仅存本机</span></div>
