@@ -43,6 +43,7 @@ writeFileSync(join(dist, 'qixia', 'index.html'), readFileSync(aboutEntry, 'utf8'
 mkdirSync(join(dist, 'shizi'), { recursive: true })
 writeFileSync(join(dist, 'shizi', 'index.html'), readFileSync(aboutEntry, 'utf8')
   .replaceAll('./assets/', '../about/assets/')
+  .replace('content="width=device-width,initial-scale=1.0"', 'content="width=device-width,initial-scale=1.0,viewport-fit=cover"')
   .replace(/<title>[^<]*<\/title>/, '<title>狮小新 · 致新书院吉祥物</title>')
   .replace(/<html lang="en">/, '<html lang="zh-CN">')
   .replace(/(<meta (?:name|property)="(?:description|og:description|twitter:description)" content=")[^"]*/g, '$1一头小狮，一院朝气。旋转、靠近，按六视图看致新书院的狮子吉祥物。')

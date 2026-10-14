@@ -36,6 +36,7 @@
 - 照片墙：`XHBlogs/data/albums.ts`；照片文件在 `XHBlogs/public/photos/`
 - 音乐（本地音频 + 歌词）：`XHBlogs/components/MusicProvider.tsx`，音频在 `XHBlogs/public/audio/`
 - 门户内容：`ZZC/src/`（介绍页 `App.tsx` 与 `src/data/`，地图 `map/`，樱花古境 `qixia/`，狮小新 `shizi/`）
+- 狮小新已同步 [独立站版本 2243ade](https://github.com/Haibarazzc/haibarazzc.github.io/commit/2243adeff4928ff1c5bb15a42ff619accabdb123)：原型模型、欢呼、摸头、设计介绍与明信片。模型由 Vite 作为模块资源打包，适配 `/portfolio/shizi/`，品牌入口返回主站。
 - 门户子站博客：`ZZC/blog/*.md`，`npm run build` 自动生成
 
 归档页（`/archive`）、标签页（`/tags/<标签>`）、RSS（`/rss.xml`）、sitemap（`/sitemap.xml`）

@@ -171,11 +171,15 @@ function Trees() {
   return <primitive object={grove} />
 }
 
+const ignoreGateLionEvent = () => {}
+
 function GateLion() {
   const [gx, gz] = toWorld(849, 2962)
   return (
     <group position={[gx - 10, 0, gz + 8]} rotation={[0, Math.PI * 0.78, 0]} scale={0.4}>
-      <LionModel pose="stand" reduced={false} selected={-1} onSelect={() => {}} />
+      <Suspense fallback={null}>
+        <LionModel pose="stand" reduced animated={false} cheerRevision={0} petRevision={0} photoPose="stand" onPet={ignoreGateLionEvent} onSelect={ignoreGateLionEvent} onReady={ignoreGateLionEvent} />
+      </Suspense>
     </group>
   )
 }

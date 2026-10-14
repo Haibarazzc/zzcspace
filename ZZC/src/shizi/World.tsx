@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import { Suspense, useEffect, useMemo, useRef, type RefObject } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Environment, Html, Lightformer, OrbitControls } from '@react-three/drei'
+import { Environment, Lightformer, OrbitControls } from '@react-three/drei'
 import { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import * as T from 'three'
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js'
@@ -11,26 +11,37 @@ import LionModel from './LionModel'
 import { buildSakuraGrove } from './sakuraGrove'
 import { features, poses, type CameraShot, type PoseId, type ViewMode } from './data'
 
+export type CaptureScene = () => Promise<HTMLCanvasElement>
+
 export type WorldProps = {
   pose: PoseId
   shot: CameraShot
   selected: number
   auto: boolean
   reduced: boolean
+  animated: boolean
+  cheerRevision: number
+  photoMode: boolean
+  petRevision: number
   onSelect: (id: number) => void
+  onPet: () => void
+  onCaptureReady: (capture: CaptureScene | null) => void
   onManual: () => void
   onBearing: (degrees: number) => void
   onReady: () => void
 }
 
 const shots: Record<ViewMode, { pos: [number, number, number]; at: [number, number, number] }> = {
-  overview: { pos: [2.7, 1.75, 6.5], at: [0, 1.55, 0] },
+  overview: { pos: [3.4, 2.15, 8.4], at: [0, 1.45, 0] },
   front: { pos: [0, 1.65, 6.6], at: [0, 1.55, 0] },
   side: { pos: [6.6, 1.6, 0.12], at: [0, 1.55, 0] },
   top: { pos: [0.08, 7.4, 0.3], at: [0, 0.2, 0] },
 }
 
-function Cinema({ pose }: { pose: PoseId }) {
+const photoOverview = { pos: [2.2, 1.95, 6.4] as const, at: [0, 1.5, 0] as const }
+const photoShots = { ...shots, overview: photoOverview }
+
+function Cinema({ pose, onCaptureReady }: Pick<WorldProps, 'pose' | 'onCaptureReady'>) {
   const { gl, scene, camera, size } = useThree()
   const pipeline = useMemo(() => {
     const composer = new EffectComposer(gl)
@@ -44,6 +55,103 @@ function Cinema({ pose }: { pose: PoseId }) {
   }, [gl, scene, camera])
   useEffect(() => { pipeline.composer.setSize(size.width, size.height) }, [pipeline, size])
   useEffect(() => () => { pipeline.composer.dispose(); pipeline.bloom.dispose(); pipeline.render.dispose(); pipeline.output.dispose() }, [pipeline])
+  useEffect(() => {
+    let disposed = false
+    const capture: CaptureScene = async () => {
+      // Let the most recent pose/camera choice reach the scene before the
+      // shutter samples it; the capture itself then runs without yielding.
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()))
+      if (disposed) throw new Error('场景已关闭，请重新打开拍照模式。')
+      if (gl.getContext().isContextLost()) throw new Error('三维场景暂时无法拍照，请重新载入后再试。')
+      const width = 1440, height = 960
+      const saved = {
+        target: gl.getRenderTarget(), face: gl.getActiveCubeFace(), mip: gl.getActiveMipmapLevel(),
+        viewport: gl.getViewport(new T.Vector4()), scissor: gl.getScissor(new T.Vector4()), scissorTest: gl.getScissorTest(),
+        clearColor: gl.getClearColor(new T.Color()), clearAlpha: gl.getClearAlpha(),
+        autoClear: gl.autoClear, autoClearColor: gl.autoClearColor, autoClearDepth: gl.autoClearDepth, autoClearStencil: gl.autoClearStencil,
+        toneMapping: gl.toneMapping, exposure: gl.toneMappingExposure, colorSpace: gl.outputColorSpace,
+      }
+      // A separate, short-lived pipeline leaves the live preview's buffers,
+      // camera and pixel ratio intact, including if rendering fails midway.
+      const composer = new EffectComposer(gl)
+      const bloom = new UnrealBloomPass(new T.Vector2(width, height), pipeline.bloom.strength, pipeline.bloom.radius, pipeline.bloom.threshold)
+      const output = new OutputPass()
+      const target = new T.WebGLRenderTarget(width, height, { type: T.UnsignedByteType, depthBuffer: false, stencilBuffer: false, colorSpace: T.NoColorSpace })
+      let render: RenderPass | null = null
+      try {
+        scene.updateMatrixWorld(true)
+        camera.updateWorldMatrix(true, false)
+        if (camera instanceof T.PerspectiveCamera || camera instanceof T.OrthographicCamera) camera.updateProjectionMatrix()
+        const captureCamera = camera.clone()
+        camera.getWorldPosition(captureCamera.position)
+        camera.getWorldQuaternion(captureCamera.quaternion)
+        captureCamera.scale.set(1, 1, 1)
+        if (captureCamera instanceof T.PerspectiveCamera) {
+          captureCamera.aspect = width / height
+          captureCamera.clearViewOffset()
+          captureCamera.updateProjectionMatrix()
+        } else if (captureCamera instanceof T.OrthographicCamera) {
+          const center = (captureCamera.left + captureCamera.right) / 2
+          const halfWidth = (captureCamera.top - captureCamera.bottom) / 2 * width / height
+          captureCamera.left = center - halfWidth
+          captureCamera.right = center + halfWidth
+          captureCamera.clearViewOffset()
+          captureCamera.updateProjectionMatrix()
+        }
+        captureCamera.updateMatrixWorld(true)
+        render = new RenderPass(scene, captureCamera)
+        composer.setPixelRatio(1)
+        composer.setSize(width, height)
+        composer.renderToScreen = false
+        composer.addPass(render)
+        composer.addPass(bloom)
+        gl.setScissorTest(false)
+        composer.render(0)
+        // OutputPass applies the same ACES exposure and sRGB transfer as the
+        // preview. The RGBA8 target stores those encoded bytes for canvas.
+        output.renderToScreen = false
+        output.render(gl, target, composer.readBuffer, 0, false)
+        const pixels = new Uint8Array(width * height * 4)
+        gl.readRenderTargetPixels(target, 0, 0, width, height, pixels)
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const context = canvas.getContext('2d')
+        if (!context) throw new Error('当前浏览器无法生成照片，请稍后再试。')
+        const image = context.createImageData(width, height)
+        const stride = width * 4
+        let hasColor = false
+        for (let row = 0; row < height; row++) {
+          const start = (height - row - 1) * stride
+          image.data.set(pixels.subarray(start, start + stride), row * stride)
+        }
+        for (let i = 0; i < pixels.length && !hasColor; i += 4) hasColor = pixels[i] > 0 || pixels[i + 1] > 0 || pixels[i + 2] > 0
+        if (!hasColor) throw new Error('照片暂时没有生成，请再拍一次。')
+        context.putImageData(image, 0, 0)
+        return canvas
+      } finally {
+        gl.setRenderTarget(saved.target, saved.face, saved.mip)
+        gl.setViewport(saved.viewport)
+        gl.setScissor(saved.scissor)
+        gl.setScissorTest(saved.scissorTest)
+        gl.setClearColor(saved.clearColor, saved.clearAlpha)
+        gl.autoClear = saved.autoClear
+        gl.autoClearColor = saved.autoClearColor
+        gl.autoClearDepth = saved.autoClearDepth
+        gl.autoClearStencil = saved.autoClearStencil
+        gl.toneMapping = saved.toneMapping
+        gl.toneMappingExposure = saved.exposure
+        gl.outputColorSpace = saved.colorSpace
+        target.dispose()
+        render?.dispose()
+        bloom.dispose()
+        output.dispose()
+        composer.dispose()
+      }
+    }
+    onCaptureReady(capture)
+    return () => { disposed = true; onCaptureReady(null) }
+  }, [gl, scene, camera, pipeline, onCaptureReady])
   useFrame((_, dt) => {
     gl.toneMappingExposure = T.MathUtils.damp(gl.toneMappingExposure, poses[pose].exposure, 2, dt)
     pipeline.bloom.strength = T.MathUtils.damp(pipeline.bloom.strength, pose === 'cheer' ? 0.14 : pose === 'glance' ? 0.1 : 0.07, 2, dt)
@@ -52,31 +160,44 @@ function Cinema({ pose }: { pose: PoseId }) {
   return null
 }
 
-function CameraRig({ shot, auto, reduced, onManual, onBearing }: Pick<WorldProps, 'shot' | 'auto' | 'reduced' | 'onManual' | 'onBearing'>) {
+function CameraRig({ shot, pose, auto, reduced, photoMode, onManual, onBearing }: Pick<WorldProps, 'shot' | 'pose' | 'auto' | 'reduced' | 'photoMode' | 'onManual' | 'onBearing'>) {
   const controls = useRef<OrbitControlsImpl>(null)
   const { camera, size } = useThree()
   const destination = useRef(new T.Vector3(...shots.overview.pos))
   const target = useRef(new T.Vector3(...shots.overview.at))
   const moving = useRef(false)
   const lastBearing = useRef(0)
+  const cameraPose = photoMode ? null : pose
   useEffect(() => {
-    const framed = shot.focus !== null
-      ? { pos: features[shot.focus].camera, at: features[shot.focus].point }
-      : shots[shot.mode]
+    const framed = photoMode ? photoShots[shot.mode]
+      : shot.focus !== null ? { pos: features[shot.focus].camera, at: features[shot.focus].point }
+        : cameraPose === 'cheer' && shot.mode === 'overview' ? photoOverview : shots[shot.mode]
     const pos = new T.Vector3(...framed.pos)
     const at = new T.Vector3(...framed.at)
-    if (size.width < 900) pos.sub(at).multiplyScalar(1.28).add(at)
+    if (!photoMode && size.width < 900) pos.sub(at).multiplyScalar(1.28).add(at)
     destination.current.copy(pos)
     target.current.copy(at)
-    if (reduced) {
-      camera.position.copy(pos)
-      controls.current?.target.copy(at)
-      controls.current?.update()
+    if (reduced || photoMode) {
+      moving.current = false
+      if (controls.current) {
+        const damping = controls.current.enableDamping
+        controls.current.autoRotate = false
+        controls.current.enableDamping = false
+        controls.current.update()
+        camera.position.copy(pos)
+        controls.current.target.copy(at)
+        controls.current.update()
+        controls.current.enableDamping = damping
+      } else {
+        camera.position.copy(pos)
+        camera.lookAt(at)
+        camera.updateMatrixWorld()
+      }
     } else moving.current = true
-  }, [shot, camera, reduced, size.width, size.height])
+  }, [shot, cameraPose, photoMode, camera, reduced, size.width, size.height])
   useFrame((_, dt) => {
     if (!controls.current) return
-    controls.current.autoRotate = auto && !moving.current && !reduced && shot.focus === null
+    controls.current.autoRotate = auto && !photoMode && !moving.current && !reduced && shot.focus === null
     if (moving.current) {
       const t = 1 - Math.exp(-dt * 3.1)
       camera.position.lerp(destination.current, t)
@@ -157,19 +278,22 @@ function Motes({ reduced, pose }: { reduced: boolean; pose: PoseId }) {
   )
 }
 
-function SakuraGrove() {
+function SakuraGrove({ photoMode }: { photoMode: boolean }) {
   const grove = useMemo(() => buildSakuraGrove([
-    // 近景六棵
+    // 近景四棵
     { x: -3.4, z: -2.3, seed: 11, scale: 0.95 }, { x: 3.6, z: -2.7, seed: 27, scale: 1.05 },
-    { x: -4.3, z: 1.7, seed: 43, scale: 0.9 }, { x: 4.2, z: 2.0, seed: 58, scale: 0.85 },
-    { x: 0.8, z: -4.7, seed: 76, scale: 1 }, { x: -1.8, z: 4.4, seed: 91, scale: 0.8 },
+    { x: -4.3, z: 1.7, seed: 43, scale: 0.9 }, { x: 0.8, z: -4.7, seed: 76, scale: 1 },
     // 远景一排（雾中层次，放大压住天际线）
     { x: -6.8, z: -4.6, seed: 112, scale: 1.45 }, { x: 6.9, z: -4.2, seed: 128, scale: 1.3 },
     { x: -7.6, z: 3.2, seed: 141, scale: 1.2 }, { x: 7.2, z: 4.4, seed: 156, scale: 1.5 },
     { x: 3.4, z: -7.4, seed: 169, scale: 1.35 }, { x: -3.1, z: -7.8, seed: 183, scale: 1.6 },
   ]), [])
-  useEffect(() => () => grove.dispose(), [grove])
-  return <primitive object={grove.group} />
+  const foreground = useMemo(() => buildSakuraGrove([
+    { x: 4.2, z: 2.0, seed: 58, scale: 0.85 },
+    { x: -1.8, z: 4.4, seed: 91, scale: 0.8 },
+  ]), [])
+  useEffect(() => () => { grove.dispose(); foreground.dispose() }, [grove, foreground])
+  return <group><primitive object={grove.group} /><primitive object={foreground.group} visible={!photoMode} /></group>
 }
 
 function SteppingStones() {
@@ -254,7 +378,7 @@ function Fence() {
   )
 }
 
-function Garden() {
+function Garden({ photoMode }: { photoMode: boolean }) {
   const props = useMemo(() => ({
     bushes: [
       { x: -2.3, z: 1.9, s: 0.42 }, { x: 2.4, z: 1.6, s: 0.36 }, { x: -2.8, z: -0.6, s: 0.3 },
@@ -266,7 +390,7 @@ function Garden() {
   }), [])
   return (
     <group>
-      <SakuraGrove />
+      <SakuraGrove photoMode={photoMode} />
       {props.bushes.map(b => (
         <mesh key={b.x + 'b' + b.z} position={[b.x, b.s * 0.55, b.z]} scale={[b.s, b.s * 0.75, b.s]} castShadow>
           <icosahedronGeometry args={[1, 1]} />
@@ -324,7 +448,7 @@ function Garden() {
   )
 }
 
-function Stage({ pose, reduced }: { pose: PoseId; reduced: boolean }) {
+function Stage({ pose, reduced, photoMode }: Pick<WorldProps, 'pose' | 'reduced' | 'photoMode'>) {
   const lamp = poses[pose].lamp
   return (
     <group>
@@ -347,7 +471,7 @@ function Stage({ pose, reduced }: { pose: PoseId; reduced: boolean }) {
           <meshStandardMaterial color="#655f54" roughness={0.92} />
         </mesh>
       ))}
-      <Garden />
+      <Garden photoMode={photoMode} />
       <mesh position={[0, 0.07, 0]} receiveShadow castShadow>
         <cylinderGeometry args={[1.7, 1.86, 0.14, 72]} />
         <meshStandardMaterial color="#5c4e42" roughness={0.84} />
@@ -378,26 +502,50 @@ function Stage({ pose, reduced }: { pose: PoseId; reduced: boolean }) {
   )
 }
 
-function Scene(props: WorldProps) {
-  useEffect(() => { props.onReady() }, [props.onReady])
+function FeaturePin({ selected, element }: { selected: number; element: RefObject<HTMLDivElement | null> }) {
+  const point = useMemo(() => {
+    const result = new T.Vector3(...features[selected].point)
+    result.y += 0.35
+    return result
+  }, [selected])
+  const projected = useMemo(() => new T.Vector3(), [])
+  const { camera, size } = useThree()
+  useFrame(() => {
+    if (!element.current) return
+    projected.copy(point).project(camera)
+    element.current.style.visibility = projected.z < -1 || projected.z > 1 ? 'hidden' : 'visible'
+    element.current.style.transform = `translate3d(${(projected.x + 1) * size.width / 2}px,${(1 - projected.y) * size.height / 2}px,0) translate(-50%,-50%)`
+  })
+  return null
+}
+
+function Scene(props: WorldProps & { pin: RefObject<HTMLDivElement | null> }) {
   return (
     <>
       <Atmosphere pose={props.pose} />
-      <Stage pose={props.pose} reduced={props.reduced} />
-      <LionModel pose={props.pose} reduced={props.reduced} selected={props.selected} onSelect={props.onSelect} />
-      <Html position={[features[props.selected].point[0], features[props.selected].point[1] + 0.35, features[props.selected].point[2]]} center zIndexRange={[5, 0]} style={{ pointerEvents: 'none' }}>
-        <div className="sz-pin"><span>{String(props.selected + 1).padStart(2, '0')}</span>{features[props.selected].name}</div>
-      </Html>
-      <CameraRig shot={props.shot} auto={props.auto} reduced={props.reduced} onManual={props.onManual} onBearing={props.onBearing} />
-      <Cinema pose={props.pose} />
+      <Stage pose={props.pose} reduced={props.reduced} photoMode={props.photoMode} />
+      <Suspense fallback={null}>
+        <LionModel pose={props.pose} reduced={props.reduced} animated={props.animated} cheerRevision={props.cheerRevision} petRevision={props.petRevision} onPet={props.onPet} photoPose={props.photoMode ? props.pose : null} onSelect={props.onSelect} onReady={props.onReady} />
+      </Suspense>
+      {!props.photoMode && <FeaturePin selected={props.selected} element={props.pin} />}
+      <CameraRig shot={props.shot} pose={props.pose} auto={props.auto} reduced={props.reduced} photoMode={props.photoMode} onManual={props.onManual} onBearing={props.onBearing} />
+      <Cinema pose={props.pose} onCaptureReady={props.onCaptureReady} />
     </>
   )
 }
 
 export default function World(props: WorldProps) {
+  const pin = useRef<HTMLDivElement>(null)
   return (
+    <>
     <Canvas shadows dpr={[1, 1.5]} camera={{ position: shots.overview.pos, fov: 36, near: 0.1, far: 40 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.toneMapping = T.ACESFilmicToneMapping; gl.toneMappingExposure = 1.06; gl.shadowMap.type = T.PCFShadowMap; gl.domElement.style.cursor = 'grab' }}>
-      <Scene {...props} />
+      <Scene {...props} pin={pin} />
     </Canvas>
+    <div style={{ pointerEvents: 'none', zIndex: 5, display: props.photoMode ? 'none' : undefined }} aria-hidden="true">
+      <div ref={pin} className="sz-pin" style={{ position: 'absolute', left: 0, top: 0 }}>
+        <span>{String(props.selected + 1).padStart(2, '0')}</span>{features[props.selected].name}
+      </div>
+    </div>
+    </>
   )
 }
