@@ -12,8 +12,8 @@
 .sz-design-intro h2{margin:0;font-size:32px;font-weight:400;line-height:1.55;letter-spacing:.08em}
 .sz-design-intro p{margin:0;font-size:14px;line-height:1.95;color:#e6d5bf}
 .sz-design-palette{display:flex;align-items:center;gap:7px;margin-top:14px}
-.sz-design-palette>span{width:20px;height:20px;border:1px solid rgba(255,241,212,.3);border-radius:50%;background:#dd7c1a}
-.sz-design-palette>span:nth-child(2){margin-left:-12px;background:#f7f0e4}
+.sz-design-palette>span{width:20px;height:20px;border:1px solid rgba(255,241,212,.3);border-radius:50%;background:#ff9c00}
+.sz-design-palette>span:nth-child(2){margin-left:-12px;background:#fff}
 .sz-design-palette small{margin-left:5px;font-size:10px;letter-spacing:.1em;color:var(--sz-muted)}
 .sz-design-ideas{list-style:none;padding:0;margin:24px 0 0}
 .sz-design-ideas li{display:grid;grid-template-columns:32px 140px minmax(0,1fr);gap:18px;align-items:start;padding:14px 0;border-top:1px solid var(--sz-line)}
