@@ -212,7 +212,7 @@ export default function Shizi() {
           <button className="sz-icon sz-help-close" aria-label="关闭操作指南" onClick={() => dialog.current?.close()}><X size={20} /></button>
           <Compass size={32} />
           <h2>六面看狮，光影可换。</h2>
-          <p>这只狮子保留原型的日轮鬃、圆脸笑意与短肢细尾，补上暖橙配色和胸口院徽。静立欣赏完整造型，欢呼时双手举起，回望从侧面观察轮廓。</p>
+          <p>这只狮子保留完整模型的日轮鬃、圆脸笑意、白色手套与胸口院徽。静立欣赏完整造型，欢呼时双手举起，回望从侧面观察轮廓。</p>
           <dl>
             <div><dt>转动与靠近</dt><dd>鼠标拖拽 / 单指滑动旋转，滚轮 / 双指捏合缩放。</dd></div>
             <div><dt>和狮子打招呼</dt><dd>在场景中移动鼠标或轻触屏幕，它会轻轻看过去；点击额头或“摸摸头”，它会眯眼、歪头回应。右下角可暂停动作。</dd></div>
@@ -221,7 +221,7 @@ export default function Shizi() {
             <div><dt>看一处设计</dt><dd>点击狮子的其他部位或六处目录；← → 切换上一处、下一处。</dd></div>
             <div><dt>换一个角度</dt><dd>1 全景 · 2 正面 · 3 侧面 · 4 俯瞰 · R 回到起点 · T 切换场景。</dd></div>
           </dl>
-          <small>原型几何 · 展示配色、院徽与表情细节为场景补充</small>
+          <small>完整模型 · 动作与庭院互动为网页展示补充</small>
           <button className="sz-help-enter" onClick={() => dialog.current?.close()}>继续观看<ArrowUpRight size={16} /></button>
         </div>
       </dialog>

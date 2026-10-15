@@ -1,5 +1,6 @@
 import * as T from 'three'
 import type { PoseId } from './data'
+import { addNativeFaceMorphs } from './lionFace'
 
 export const BODY_PIVOT = 0.32
 export const HEAD_PIVOT = 1.13
@@ -7,6 +8,7 @@ export const CHEER_DURATION = 3.7
 export const CHEER_PEAK_TIME = 1.45
 export const PET_DURATION = 2.8
 export const PET_PEAK_TIME = 0.9
+const CHEER_ARM_SCALE = 1
 
 // Both the sculpt and its separate tooth/tongue meshes use normalized model
 // coordinates, so one field keeps the original mouth contour joined together.
@@ -64,61 +66,93 @@ export function addSmileMorph(geometry: T.BufferGeometry, origin: [number, numbe
 // includes each thumb without pulling in the adjacent belly surface.
 function createArmWeights(geometry: T.BufferGeometry) {
   const position = geometry.getAttribute('position'), count = position.count
-  const neighbors = Array.from({ length: count }, () => new Set<number>())
+  // UV seams duplicate the surface vertices in the textured model. Weld only
+  // the logical graph, keeping the actual UVs, normals and indices unchanged.
+  const weldedIndices = new Uint32Array(count)
+  const weldedVertices: number[] = []
+  const positions = new Map<string, number>()
+  for (let i = 0; i < count; i++) {
+    const key = `${Math.round(position.getX(i) * 1e5)},${Math.round(position.getY(i) * 1e5)},${Math.round(position.getZ(i) * 1e5)}`
+    let vertex = positions.get(key)
+    if (vertex === undefined) {
+      vertex = weldedVertices.length
+      positions.set(key, vertex)
+      weldedVertices.push(i)
+    }
+    weldedIndices[i] = vertex
+  }
+  const neighbors = Array.from({ length: weldedVertices.length }, () => new Set<number>())
   const index = geometry.getIndex()!
   for (let i = 0; i < index.count; i += 3) {
-    const a = index.getX(i), b = index.getX(i + 1), c = index.getX(i + 2)
-    neighbors[a].add(b).add(c); neighbors[b].add(a).add(c); neighbors[c].add(a).add(b)
+    const a = weldedIndices[index.getX(i)], b = weldedIndices[index.getX(i + 1)], c = weldedIndices[index.getX(i + 2)]
+    if (a !== b) { neighbors[a].add(b); neighbors[b].add(a) }
+    if (b !== c) { neighbors[b].add(c); neighbors[c].add(b) }
+    if (c !== a) { neighbors[c].add(a); neighbors[a].add(c) }
   }
-  const weights = new Float32Array(count)
+  const weights = new Float32Array(weldedVertices.length)
+  const inHand = (vertex: number, side: number) => {
+    const i = weldedVertices[vertex], y = position.getY(i)
+    return y >= 0.32 && y < 0.70 && position.getZ(i) > -0.15 && side * position.getX(i) > 0.48
+  }
   for (const side of [-1, 1]) {
-    let seed = 0, nearest = Infinity
-    for (let i = 0; i < count; i++) {
+    let seed = -1, nearest = Infinity
+    for (let vertex = 0; vertex < weldedVertices.length; vertex++) {
+      if (!inHand(vertex, side)) continue
+      const i = weldedVertices[vertex]
       const d = Math.hypot(position.getX(i) - side * 0.60, position.getY(i) - 0.55, position.getZ(i) - 0.16)
-      if (d < nearest) { nearest = d; seed = i }
+      if (d < nearest) { nearest = d; seed = vertex }
     }
+    if (seed === -1) continue
     const queue = [seed], seen = new Set(queue)
     for (let at = 0; at < queue.length; at++) {
       const i = queue[at]
       weights[i] = 1
       for (const n of neighbors[i]) {
-        if (!seen.has(n) && position.getY(n) < 0.70 && position.getZ(n) > -0.15 && side * position.getX(n) > 0.28) {
+        if (!seen.has(n) && inHand(n, side)) {
           seen.add(n); queue.push(n)
         }
       }
     }
   }
   const free: number[] = []
-  for (let i = 0; i < count; i++) {
-    if (position.getY(i) >= 0.70 && position.getY(i) < 1.04
-      && Math.abs(position.getX(i)) > 0.34 && position.getZ(i) > -0.10) free.push(i)
+  for (let vertex = 0; vertex < weldedVertices.length; vertex++) {
+    const i = weldedVertices[vertex]
+    if (weights[vertex] === 0 && position.getY(i) > 0.32 && position.getY(i) < 1.04
+      && Math.abs(position.getX(i)) > 0.40 && position.getZ(i) > -0.18) free.push(vertex)
   }
-  // Harmonic falloff across the arm root gives contiguous weights on the
-  // sculpted shoulder web; spatial thresholds alone split the small thumbs.
-  const links = free.map(i => Array.from(neighbors[i], n => ({
-    n, weight: 1 / Math.max(0.01, Math.hypot(position.getX(i) - position.getX(n), position.getY(i) - position.getY(n), position.getZ(i) - position.getZ(n))),
-  })))
+  // Blend every unpinned vertex around the palm and shoulder, including the
+  // inner thumb and belly side. Limiting the blend to y>=0.70 would cut across
+  // this denser sculpt's fused arm/body surface and create stretched slivers.
+  const links = free.map(vertex => {
+    const i = weldedVertices[vertex]
+    return Array.from(neighbors[vertex], n => {
+      const j = weldedVertices[n]
+      return { n, weight: 1 / Math.max(0.0001, Math.hypot(position.getX(i) - position.getX(j), position.getY(i) - position.getY(j), position.getZ(i) - position.getZ(j))) }
+    })
+  })
+  const next = new Float32Array(free.length)
   for (let pass = 0; pass < 180; pass++) {
-    const next = free.map((_, at) => {
+    for (let at = 0; at < free.length; at++) {
       let value = 0, sum = 0
       for (const link of links[at]) { value += weights[link.n] * link.weight; sum += link.weight }
-      return value / sum
-    })
+      next[at] = sum ? value / sum : weights[free[at]]
+    }
     free.forEach((i, at) => { weights[i] = next[at] })
   }
-  return weights
+  return { weights, weldedIndices, weldedVertices }
 }
 
 // Local arm chains articulate the original surface while the plinth stays fixed.
-export function createLionRig(source: T.BufferGeometry) {
+export function createLionRig(source: T.BufferGeometry, sourceMaterial: T.Material | T.Material[]) {
   const geometry = source.clone()
-  addSmileMorph(geometry)
+  addNativeFaceMorphs(geometry)
   const position = geometry.getAttribute('position')
-  const armWeights = createArmWeights(geometry)
+  const surface = createArmWeights(geometry)
   const indices = new Uint16Array(position.count * 4)
   const weights = new Float32Array(position.count * 4)
   for (let i = 0; i < position.count; i++) {
-    const x = position.getX(i), y = position.getY(i), z = position.getZ(i)
+    const vertex = surface.weldedVertices[surface.weldedIndices[i]]
+    const x = position.getX(vertex), y = position.getY(vertex), z = position.getZ(vertex)
     const mobile = T.MathUtils.smoothstep(y, 0.32, 0.65)
     const head = T.MathUtils.smoothstep(y, 0.95, 1.20)
     // The back of the mane shares the tail's X/Z range, so gate by height too.
@@ -126,7 +160,7 @@ export function createLionRig(source: T.BufferGeometry) {
       * (1 - T.MathUtils.smoothstep(y, 0.75, 0.88))
       * (1 - T.MathUtils.smoothstep(z, -0.36, -0.18))
       * T.MathUtils.smoothstep(y, 0.17, 0.195)
-    const arm = armWeights[i]
+    const arm = surface.weights[surface.weldedIndices[i]]
     const forearm = 1 - T.MathUtils.smoothstep(y, 0.62, 0.77)
     const shoulderIndex = x < 0 ? 4 : 6
     const influences = [
@@ -168,7 +202,9 @@ export function createLionRig(source: T.BufferGeometry) {
     elbows.push(elbow)
   }
   const skeleton = new T.Skeleton([root, body, head, tail, shoulders[0], elbows[0], shoulders[1], elbows[1]])
-  const material = new T.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.5, metalness: 0.02, clearcoat: 0.18, clearcoatRoughness: 0.5 })
+  // Material.clone retains the original PBR maps and UV setup. Their textures
+  // remain owned by the GLTF cache and must outlive this disposable rig.
+  const material = Array.isArray(sourceMaterial) ? sourceMaterial.map(value => value.clone()) : sourceMaterial.clone()
   const mesh = new T.SkinnedMesh(geometry, material)
   mesh.add(root)
   mesh.updateMatrixWorld(true)
@@ -179,7 +215,11 @@ export function createLionRig(source: T.BufferGeometry) {
   mesh.frustumCulled = false
   return {
     mesh, body, head, tail, shoulders, elbows, armIndices: [4, 5, 6, 7],
-    dispose() { geometry.dispose(); material.dispose(); skeleton.dispose() },
+    dispose() {
+      geometry.dispose()
+      for (const value of Array.isArray(material) ? material : [material]) value.dispose()
+      skeleton.dispose()
+    },
   }
 }
 
@@ -210,9 +250,10 @@ export function animateLionRig(rig: LionRig, time: number, reactionAge: number, 
       * (1 - T.MathUtils.smootherstep(age, 2.13, 2.40))
       * Math.sin((age - 1.04) * 7.5)
     // Pitch first moves the short paws forward, clear of the large mane.
-    rig.shoulders[i].rotation.set(-0.85 * lift, 0, side * (0.95 * lift + wave * 0.055) * stagger, 'ZXY')
-    rig.shoulders[i].position.z = 0.14 + lift * 0.055
-    rig.elbows[i].rotation.set(-0.20 * lift, 0, side * (1.00 * lift + wave * 0.065), 'ZXY')
+    // The localized weights keep the chest still as the short paws rise.
+    rig.shoulders[i].rotation.set(-0.85 * lift * CHEER_ARM_SCALE, 0, side * (0.95 * lift + wave * 0.055) * stagger * CHEER_ARM_SCALE, 'ZXY')
+    rig.shoulders[i].position.z = 0.14 + lift * 0.055 * CHEER_ARM_SCALE
+    rig.elbows[i].rotation.set(-0.20 * lift * CHEER_ARM_SCALE, 0, side * (1.00 * lift + wave * 0.065) * CHEER_ARM_SCALE, 'ZXY')
   }
   const active = cheerAge >= 0 && cheerAge < CHEER_DURATION
   const preparation = active ? T.MathUtils.smootherstep(cheerAge, 0, 0.20)
