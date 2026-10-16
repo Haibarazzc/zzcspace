@@ -10,6 +10,8 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
 import LionModel from './LionModel'
 import CourtyardGround from './CourtyardGround'
 import CourtyardDetails from './CourtyardDetails'
+import MountainLandscape from './MountainLandscape'
+import MountainSky from './MountainSky'
 import { buildSakuraGrove } from './sakuraGrove'
 import { features, poses, type CameraShot, type PoseId, type ViewMode } from './data'
 
@@ -37,7 +39,7 @@ const shots: Record<ViewMode, { pos: [number, number, number]; at: [number, numb
   overview: { pos: [3.4, 2.15, 8.4], at: [0, 1.45, 0] },
   front: { pos: [0, 1.65, 6.6], at: [0, 1.55, 0] },
   side: { pos: [6.6, 1.6, 0.12], at: [0, 1.55, 0] },
-  top: { pos: [0.08, 10.4, 0.3], at: [0, 0.2, 0] },
+  top: { pos: [0.08, 10.4, 2.0], at: [0, 0.2, 0] },
 }
 
 const photoOverview = { pos: [2.2, 1.95, 6.4] as const, at: [0, 1.5, 0] as const }
@@ -210,7 +212,7 @@ function CameraRig({ shot, pose, auto, reduced, photoMode, onManual, onBearing }
     const angle = Math.atan2(camera.position.x - controls.current.target.x, camera.position.z - controls.current.target.z) * 180 / Math.PI
     if (Math.abs(angle - lastBearing.current) > 1) { lastBearing.current = angle; onBearing(angle) }
   })
-  return <OrbitControls ref={controls} makeDefault enablePan={false} enableDamping dampingFactor={0.075} minDistance={1.7} maxDistance={12} minPolarAngle={0.18} maxPolarAngle={Math.PI / 2 + 0.08} autoRotateSpeed={0.55} rotateSpeed={0.65} zoomSpeed={0.75} onStart={() => { moving.current = false; onManual() }} target={[0, 1.4, 0]} />
+  return <OrbitControls ref={controls} makeDefault enablePan={false} enableDamping dampingFactor={0.075} minDistance={1.7} maxDistance={12} minPolarAngle={0.18} maxPolarAngle={Math.PI / 2 + 0.035} autoRotateSpeed={0.55} rotateSpeed={0.65} zoomSpeed={0.75} onStart={() => { moving.current = false; onManual() }} target={[0, 1.4, 0]} />
 }
 
 function Atmosphere({ pose }: { pose: PoseId }) {
@@ -221,13 +223,14 @@ function Atmosphere({ pose }: { pose: PoseId }) {
   const targetColor = useMemo(() => new T.Color(settings.background), [settings])
   const sunColor = useMemo(() => new T.Color(settings.sun), [settings])
   const sunPosition = useMemo(() => new T.Vector3(...settings.position), [settings])
-  useEffect(() => { scene.background = new T.Color(settings.background); scene.fog = new T.Fog(settings.background, 9, 22); return () => { scene.fog = null } }, [scene])
+  useEffect(() => { scene.background = new T.Color(settings.background); scene.fog = new T.Fog(settings.background, 14, 110); return () => { scene.fog = null } }, [scene])
   useFrame((_, dt) => {
+    const colorBlend = 1 - Math.exp(-Math.min(dt, .05) * 2)
     if (!(scene.background instanceof T.Color)) scene.background = targetColor.clone()
-    scene.background.lerp(targetColor, 1 - Math.exp(-dt * 2))
+    scene.background.lerp(targetColor, colorBlend)
     if (scene.fog) scene.fog.color.copy(scene.background as T.Color)
     if (sun.current) {
-      sun.current.color.lerp(sunColor, dt * 2)
+      sun.current.color.lerp(sunColor, colorBlend)
       sun.current.position.lerp(sunPosition, 1 - Math.exp(-dt * 1.7))
       sun.current.intensity = T.MathUtils.damp(sun.current.intensity, settings.sunPower, 2, dt)
     }
@@ -342,6 +345,8 @@ function Scene(props: WorldProps & { pin: RefObject<HTMLDivElement | null> }) {
   return (
     <>
       <Atmosphere pose={props.pose} />
+      <MountainSky pose={props.pose} />
+      <MountainLandscape pose={props.pose} />
       <Stage pose={props.pose} reduced={props.reduced} animated={props.animated} photoMode={props.photoMode} clearView={props.photoMode || props.shot.focus !== null} />
       <Suspense fallback={null}>
         <LionModel pose={props.pose} reduced={props.reduced} animated={props.animated} cheerRevision={props.cheerRevision} petRevision={props.petRevision} onPet={props.onPet} photoPose={props.photoMode ? props.pose : null} onSelect={props.onSelect} onReady={props.onReady} />
@@ -357,7 +362,7 @@ export default function World(props: WorldProps) {
   const pin = useRef<HTMLDivElement>(null)
   return (
     <>
-    <Canvas shadows dpr={[1, 1.5]} camera={{ position: shots.overview.pos, fov: 36, near: 0.1, far: 40 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.toneMapping = T.ACESFilmicToneMapping; gl.toneMappingExposure = 1.06; gl.shadowMap.type = T.PCFShadowMap; gl.domElement.style.cursor = 'grab' }}>
+    <Canvas shadows dpr={[1, 1.5]} camera={{ position: shots.overview.pos, fov: 36, near: 0.1, far: 120 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.toneMapping = T.ACESFilmicToneMapping; gl.toneMappingExposure = 1.06; gl.shadowMap.type = T.PCFShadowMap; gl.domElement.style.cursor = 'grab' }}>
       <Scene {...props} pin={pin} />
     </Canvas>
     <div style={{ pointerEvents: 'none', zIndex: 5, display: props.photoMode ? 'none' : undefined }} aria-hidden="true">

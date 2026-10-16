@@ -13,7 +13,7 @@ export const features = [
 
 
 export const poses = {
-  stand: { label: '静立', sub: '六视之静', background: '#3a332c', sun: '#fff0d0', sunPower: 2.8, ambient: 0.72, lamp: 0.4, exposure: 1.02, position: [3.4, 6.4, 4.6] as [number, number, number] },
-  cheer: { label: '欢呼', sub: '举手向光', background: '#4c3b2c', sun: '#ffc48a', sunPower: 3.3, ambient: 0.88, lamp: 0.85, exposure: 1.06, position: [2.4, 7.2, 4.8] as [number, number, number] },
-  glance: { label: '回望', sub: '侧面看狮', background: '#1b1926', sun: '#d5def8', sunPower: 1.45, ambient: 0.4, lamp: 1.5, exposure: 0.98, position: [-4.2, 5.4, -2.2] as [number, number, number] },
+  stand: { label: '静立', sub: '六视之静', background: '#c4cebf', sun: '#fff0d0', sunPower: 2.8, ambient: 0.72, lamp: 0.4, exposure: 1.02, position: [3.4, 6.4, 4.6] as [number, number, number] },
+  cheer: { label: '欢呼', sub: '举手向光', background: '#d8cbb2', sun: '#ffc48a', sunPower: 3.3, ambient: 0.88, lamp: 0.85, exposure: 1.06, position: [2.4, 7.2, 4.8] as [number, number, number] },
+  glance: { label: '回望', sub: '侧面看狮', background: '#344459', sun: '#d5def8', sunPower: 1.45, ambient: 0.4, lamp: 1.5, exposure: 0.98, position: [-4.2, 5.4, -2.2] as [number, number, number] },
 }
