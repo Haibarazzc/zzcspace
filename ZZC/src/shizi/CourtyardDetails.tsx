@@ -3,9 +3,10 @@ import { useFrame } from '@react-three/fiber'
 import * as T from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
 import { poses, type PoseId } from './data'
+import CourtyardShrubs from './CourtyardShrubs'
 
 type Vec3 = [number, number, number]
-type Bucket = 'wood' | 'stone' | 'roof' | 'plant' | 'leaf' | 'flower' | 'glass'
+type Bucket = 'wood' | 'stone' | 'roof' | 'leaf' | 'flower' | 'glass'
 
 const noRaycast = () => {}
 const rnd = (seed: number) => T.MathUtils.euclideanModulo(Math.sin(seed * 127.1 + 311.7) * 43758.5453, 1)
@@ -16,7 +17,7 @@ function buildDetails() {
   const group = new T.Group()
   const floating = new T.Group()
   const parts: Record<Bucket, T.BufferGeometry[]> = {
-    wood: [], stone: [], roof: [], plant: [], leaf: [], flower: [], glass: [],
+    wood: [], stone: [], roof: [], leaf: [], flower: [], glass: [],
   }
   const floatParts: Record<'leaf' | 'flower', T.BufferGeometry[]> = { leaf: [], flower: [] }
   const transform = new T.Object3D()
@@ -24,7 +25,6 @@ function buildDetails() {
     wood: new T.MeshStandardMaterial({ vertexColors: true, roughness: .87 }),
     stone: new T.MeshStandardMaterial({ vertexColors: true, roughness: .96, flatShading: true }),
     roof: new T.MeshStandardMaterial({ vertexColors: true, roughness: .84, side: T.DoubleSide }),
-    plant: new T.MeshStandardMaterial({ vertexColors: true, roughness: 1, flatShading: true }),
     leaf: new T.MeshStandardMaterial({ vertexColors: true, roughness: .88, side: T.DoubleSide }),
     flower: new T.MeshStandardMaterial({ vertexColors: true, roughness: .86, side: T.DoubleSide }),
     glass: new T.MeshStandardMaterial({ vertexColors: true, roughness: .65, emissive: '#f7b965', emissiveIntensity: .4 }),
@@ -201,18 +201,14 @@ function buildDetails() {
     bake(new T.SphereGeometry(.023, 7, 4), 'flower', '#d4aa61', [x, .079, z], [0, 0, 0], [1, .6, 1], true)
   }
 
-  // A few composed planting pockets, with rounded clumps, distinct leaves,
-  // ferns and fine grass mixed at several scales. The front path stays open.
+  // Ferns, fine grass and small stones sit below the separate leafy shrubs.
+  // The front path stays open.
   const beds = [
     [-2.55, 1.8, .39], [2.65, .95, .33], [-2.9, -.55, .32], [3.0, -.7, .41],
     [-1.75, 3.25, .28], [4.7, 2.2, .24], [-4.15, -4.4, .3],
   ]
   for (let i = 0; i < beds.length; i++) {
     const [x, z, size] = beds[i]
-    for (let j = 0; j < 5; j++) {
-      const a = j * 2.399 + i, r = j === 0 ? 0 : size * .54
-      bake(new T.IcosahedronGeometry(1, 1), 'plant', ['#526446', '#64744f', '#465c41'][j % 3], [x + Math.cos(a) * r, size * (.42 + rnd(i + j * 9) * .14), z + Math.sin(a) * r], [0, a, 0], [size * .69, size * .45, size * .65])
-    }
     stone([x + size * .8, .075, z + size * .25], [size * .45, .13, size * .35], i + 83, '#777c68')
     stone([x + size * .65, .035, z + size * .68], [size * .25, .06, size * .21], i + 72, '#8b8c77')
     // Three arching fern fronds, each made from paired small leaflets.
@@ -291,6 +287,7 @@ export default function CourtyardDetails({ pose, reduced, animated }: { pose: Po
   return (
     <group dispose={null}>
       <primitive object={details.group} />
+      <CourtyardShrubs />
       {[0, 1, 2].map(i => (
         <mesh key={i} ref={mesh => { ripples.current[i] = mesh }} geometry={rippleGeometry} material={rippleMaterials[i]} position={[3.6, .029 + i * .0003, 2.6]} raycast={noRaycast} />
       ))}

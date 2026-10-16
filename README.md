@@ -36,7 +36,7 @@
 - 照片墙：`XHBlogs/data/albums.ts`；照片文件在 `XHBlogs/public/photos/`
 - 音乐（本地音频 + 歌词）：`XHBlogs/components/MusicProvider.tsx`，音频在 `XHBlogs/public/audio/`
 - 门户内容：`ZZC/src/`（介绍页 `App.tsx` 与 `src/data/`，地图 `map/`，樱花古境 `qixia/`，狮小新 `shizi/`）
-- 狮小新已同步 [独立站版本 23cdeb8](https://github.com/Haibarazzc/haibarazzc.github.io/commit/23cdeb83eb928def0805b4696b20778059197b86)：完整 PBR 模型、欢呼、摸头、设计介绍与明信片。网页 GLB 约 6.13 MB，保留原五官与院徽；身体/鬃毛 `#FF9C00`、呆毛 `#FBC700`、手套 `#FFFFFF`、面部 `#F6EAD2`、尾穗 `#A85A3C`；原件和准备脚本保存在独立站仓库。模型由 Vite 打包，适配 `/portfolio/shizi/`，品牌入口返回主站。 庭院包含分块石铺、踏步、庭灯、瓦檐木门、长凳与莲池，樱花远近分级，特写和拍照保留主体净空；水波与飘瓣遵循暂停和减少动态设置。
+- 狮小新已同步 [独立站版本 77ac1ed](https://github.com/Haibarazzc/haibarazzc.github.io/commit/77ac1ed1c1876f2c91327aabd4e2f433ae288c5a)：完整 PBR 模型、欢呼、摸头、设计介绍与明信片。网页 GLB 约 6.13 MB，保留原五官与院徽；身体/鬃毛 `#FF9C00`、呆毛 `#FBC700`、手套 `#FFFFFF`、面部 `#F6EAD2`、尾穗 `#A85A3C`；原件和准备脚本保存在独立站仓库。模型由 Vite 打包，适配 `/portfolio/shizi/`，品牌入口返回主站。 庭院包含分块石铺、踏步、庭灯、瓦檐木门、长凳与莲池，樱花远近分级，特写和拍照保留主体净空；水波与飘瓣遵循暂停和减少动态设置。 灌木使用分叉枝干与分层折叠叶冠，保留石路和主体净空；枝干合并、叶片实例化，共两个渲染批次。
 - 门户子站博客：`ZZC/blog/*.md`，`npm run build` 自动生成
 
 归档页（`/archive`）、标签页（`/tags/<标签>`）、RSS（`/rss.xml`）、sitemap（`/sitemap.xml`）
