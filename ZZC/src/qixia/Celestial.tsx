@@ -36,7 +36,7 @@ void main(){vColor=starColor;vTwinkle=.78+.22*sin(uTime*1.35+phase)*uTwinkle;
 gl_PointSize=size;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`
 const starFragment=`varying vec3 vColor;varying float vTwinkle;uniform float uOpacity;
 void main(){vec2 p=gl_PointCoord*2.-1.;float r=length(p);if(r>1.)discard;
-float a=1.-smoothstep(.2,1.,r);gl_FragColor=vec4(vColor,a*uOpacity*vTwinkle);}`
+float a=pow(1.-smoothstep(.15,1.,r),.7);gl_FragColor=vec4(vColor,a*uOpacity*vTwinkle);}`
 function Orb({time,moon}:{time:TimeOfDay;moon:boolean}) {
   const group=useRef<T.Group>(null)
   const bodyMaterial=useRef<T.ShaderMaterial>(null),haloMaterial=useRef<T.ShaderMaterial>(null)
@@ -59,14 +59,14 @@ function Orb({time,moon}:{time:TimeOfDay;moon:boolean}) {
 
 function StarField({time,reduced}:{time:TimeOfDay;reduced:boolean}) {
   const geometry=useMemo(()=>{
-    const count=1400,positions=new Float32Array(count*3),sizes=new Float32Array(count),phases=new Float32Array(count),colors=new Float32Array(count*3)
+    const count=4200,positions=new Float32Array(count*3),sizes=new Float32Array(count),phases=new Float32Array(count),colors=new Float32Array(count*3)
     const color=new T.Color()
     for(let i=0;i<count;i++){
-      const y=.004+blossomRandom(i+31)*.975,angle=blossomRandom(i+32)*Math.PI*2,radius=Math.sqrt(1-y*y)*270
+      const y=.004+Math.pow(blossomRandom(i+31),3)*.72,angle=blossomRandom(i+32)*Math.PI*2,radius=Math.sqrt(1-y*y)*270
       positions[i*3]=Math.cos(angle)*radius;positions[i*3+1]=y*270;positions[i*3+2]=Math.sin(angle)*radius
-      sizes[i]=1.5+Math.pow(blossomRandom(i+33),2.4)*3.4
+      sizes[i]=2.6+Math.pow(blossomRandom(i+33),2)*5.4
       phases[i]=blossomRandom(i+34)*Math.PI*2
-      color.set(blossomRandom(i+35)>.82?'#ffe9cf':'#dfe8ff').multiplyScalar(.9+blossomRandom(i+36)*1.1)
+      color.set(blossomRandom(i+35)>.82?'#ffe9cf':'#dfe8ff').multiplyScalar(1.3+blossomRandom(i+36)*1.5)
       colors[i*3]=color.r;colors[i*3+1]=color.g;colors[i*3+2]=color.b
     }
     const geometry=new T.BufferGeometry()

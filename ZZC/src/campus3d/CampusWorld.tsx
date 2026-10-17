@@ -31,9 +31,9 @@ const METRO_NAMES = new Set(['长岭陂', '塘朗'])
 // 尺寸的唯一来源：墙体与 details.ts 的细节必须用同一组数字
 function buildingDims(place: Place) {
   const h = hash(place.name)
-  const baseH = (HEIGHT[place.category] ?? 3.5) + (h % 4) * 1.1
-  const tall = METRO_NAMES.has(place.name) ? 16 : baseH
-  const wide = (place.category === 'sports' ? 13 : 7.5) + (h % 3) * 1.8
+  const baseH = ((HEIGHT[place.category] ?? 3.5) + (h % 4) * 1.1) * 1.35
+  const tall = METRO_NAMES.has(place.name) ? 22 : baseH
+  const wide = (place.category === 'sports' ? 13 : 7.5) * 1.1 + (h % 3) * 1.8
   return { tall, wide, depth: wide * 0.85 }
 }
 
@@ -248,7 +248,7 @@ function CameraRig({ focus, auto, onManual }: { focus: Place | null; auto: boole
 export default function CampusWorld({ onSelect, onReady }: { onSelect: (p: Place) => void; onReady: () => void }) {
   const [hovered, setHovered] = useState<number | null>(null)
   const [selected, setSelected] = useState<number | null>(null)
-  const [auto, setAuto] = useState(false)
+  const [auto, setAuto] = useState(true)
   useEffect(() => { onReady() }, [onReady])
   const choose = (i: number) => {
     setSelected(i)

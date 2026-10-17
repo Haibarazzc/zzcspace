@@ -78,6 +78,8 @@ export function buildLandscape() {
     const angle=blossomRandom(i+930)*Math.PI*2,radius=24+blossomRandom(i+1720)*79
     const x=Math.cos(angle)*radius,z=Math.sin(angle)*radius
     if(Math.abs(x-streamX(z))<4.2||z>15&&Math.abs(x-pathX(z))<3.5)continue
+    // Keep the bridge corridor open so the crossing stays in view.
+    if(Math.abs(z+8)<3.6&&x>13&&x<37)continue
     trees.push({x,y:groundHeight(x,z),z,scale:.72+blossomRandom(i+1240)*.4,seed:i+930})
   }
   group.add(buildCherryGrove(trees))
@@ -99,12 +101,12 @@ export function buildLandscape() {
   }
   const reedGeometry=new T.BufferGeometry();reedGeometry.setAttribute('position',new T.Float32BufferAttribute(reedBlades,3));reedGeometry.computeVertexNormals()
   const reedStems:T.Matrix4[]=[],reedColors:T.Color[]=[],reed=new T.Object3D()
-  for(let i=0;i<520;i++){
+  for(let i=0;i<900;i++){
     const z=-78+blossomRandom(i+4200)*156,side=i%2?1:-1
     const x=streamX(z)+side*(2.5+blossomRandom(i+4300)*1.7),y=groundHeight(x,z)
     if(y>-0.1||y<-0.82)continue
     reed.position.set(x,y-.02,z);reed.rotation.y=blossomRandom(i+4400)*Math.PI*2
-    reed.scale.setScalar(.7+blossomRandom(i+4500)*.55);reed.updateMatrix()
+    reed.scale.setScalar(1+blossomRandom(i+4500)*.7);reed.updateMatrix()
     reedStems.push(reed.matrix.clone());reedColors.push(new T.Color(i%3?'#57684a':'#6a7650'))
   }
   const reeds=new T.InstancedMesh(reedGeometry,new T.MeshStandardMaterial({side:T.DoubleSide,roughness:1}),reedStems.length)
@@ -123,5 +125,38 @@ export function buildLandscape() {
   const petals=new T.InstancedMesh(petalGeometry,new T.MeshStandardMaterial({side:T.DoubleSide,roughness:.8,emissive:'#d69cb6',emissiveIntensity:.18}),floaters.length)
   floaters.forEach((matrix,i)=>{petals.setMatrixAt(i,matrix);petals.setColorAt(i,floaterColors[i])})
   petals.name='stream-floating-petals';petals.computeBoundingSphere();group.add(petals)
+
+  // A small stone arch bridge crosses the stream, so the far bank reads as a
+  // reachable garden instead of a cut-off strip of rocks. One instanced batch.
+  const bridgeX=streamX(-8),bridgeZ=-8,bridgeSpan=8
+  const deckY=(t:number)=>.06+Math.sin(Math.PI*t)*.72
+  const stoneLight='#b4aba2',stoneMid='#968d86',stoneDark='#847c75'
+  const bridgeParts:T.Matrix4[]=[],bridgeColors:T.Color[]=[],bridge=new T.Object3D()
+  const place=(x:number,y:number,z:number,w:number,h:number,d:number,color:string)=>{
+    bridge.position.set(x,y,z);bridge.rotation.set(0,0,0);bridge.scale.set(w,h,d);bridge.updateMatrix()
+    bridgeParts.push(bridge.matrix.clone());bridgeColors.push(new T.Color(color))
+  }
+  const segments=13
+  for(let i=0;i<segments;i++){
+    const t=(i+.5)/segments,x=bridgeX-bridgeSpan/2+bridgeSpan*t,y=deckY(t)
+    place(x,y,bridgeZ,bridgeSpan/segments+.05,.2,2.45,i%2?stoneLight:stoneMid)
+    for(const side of [-1,1]){
+      place(x,y+.54,bridgeZ+side*1.14,bridgeSpan/segments+.03,.12,.14,stoneMid)
+      place(x,y+.3,bridgeZ+side*1.14,.12,.5,.12,stoneDark)
+    }
+  }
+  for(const t of [1/3,2/3]){
+    const x=bridgeX-bridgeSpan/2+bridgeSpan*t,top=deckY(t)-.05
+    place(x,(top-.95)/2-.95/2+.475,bridgeZ,1.0,top+.85,2.1,stoneMid)
+  }
+  for(const end of [-1,1]){
+    const x=bridgeX+end*(bridgeSpan/2-.5)
+    place(x,-.42,bridgeZ,1.35,1.55,3.1,stoneDark)
+    place(x,.34,bridgeZ,1.5,.15,3.25,stoneLight)
+  }
+  const bridgeMesh=new T.InstancedMesh(new T.BoxGeometry(1,1,1),new T.MeshStandardMaterial({roughness:.92}),bridgeParts.length)
+  bridgeParts.forEach((matrix,i)=>{bridgeMesh.setMatrixAt(i,matrix);bridgeMesh.setColorAt(i,bridgeColors[i])})
+  bridgeMesh.name='stream-stone-bridge';bridgeMesh.castShadow=true;bridgeMesh.receiveShadow=true;bridgeMesh.computeBoundingSphere();group.add(bridgeMesh)
+
   return group
 }

@@ -60,10 +60,10 @@ function CameraRig({shot,auto,reduced,onManual,onBearing}:Pick<WorldProps,'shot'
 function Petals({reduced}:{reduced:boolean}) {
   const mesh=useRef<T.InstancedMesh>(null),elapsed=useRef(0)
   const geometry=useMemo(createPetalGeometry,[]),dummy=useMemo(()=>new T.Object3D(),[])
-  const seeds=useMemo(()=>Array.from({length:210},(_,i)=>({
+  const seeds=useMemo(()=>Array.from({length:300},(_,i)=>({
     x:(blossomRandom(i+21)-.5)*33,z:(blossomRandom(i+412)-.5)*31,
     phase:blossomRandom(i+701)*17,speed:.35+blossomRandom(i+821)*.5,
-    size:.11+blossomRandom(i+1501)*.13,spin:blossomRandom(i+922)*Math.PI*2,
+    size:.13+blossomRandom(i+1501)*.16,spin:blossomRandom(i+922)*Math.PI*2,
   })),[])
   useEffect(()=>{
     if(mesh.current){mesh.current.instanceMatrix.setUsage(T.DynamicDrawUsage);seeds.forEach((_,i)=>mesh.current!.setColorAt(i,new T.Color(i%3?'#ffd8e9':'#fff1f0')))}
