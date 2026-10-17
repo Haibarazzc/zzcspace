@@ -57,6 +57,14 @@ writeFileSync(join(dist, 'campus3d', 'index.html'), readFileSync(aboutEntry, 'ut
   .replace(/(<meta (?:name|property)="(?:description|og:description|twitter:description)" content=")[^"]*/g, '$1南方科技大学 3D 沙盘：42 处校园地点的立体地图，点击建筑看名称与备注，还能找到守在校门口的狮小新。')
   .replace(/(<meta (?:name|property)="(?:og:title|twitter:title)" content=")[^"]*/g, '$1南科大 3D 沙盘'))
 
+mkdirSync(join(dist, 'rainy-store'), { recursive: true })
+writeFileSync(join(dist, 'rainy-store', 'index.html'), readFileSync(aboutEntry, 'utf8')
+  .replaceAll('./assets/', '../about/assets/')
+  .replace(/<title>[^<]*<\/title>/, '<title>雨夜便利店 · ほしぞらマート</title>')
+  .replace(/<html lang="en">/, '<html lang="zh-CN">')
+  .replace(/(<meta (?:name|property)="(?:description|og:description|twitter:description)" content=")[^"]*/g, '$1一场安静的雨夜。拖动旋转、滚轮缩放，看街角便利店的暖光在湿漉漉的柏油路上化开。')
+  .replace(/(<meta (?:name|property)="(?:og:title|twitter:title)" content=")[^"]*/g, '$1雨夜便利店 · ほしぞらマート'))
+
 // 2. 门户静态页复制到 dist 根（注入最新文章卡）
 let indexHtml = readFileSync(join(portal, 'index.html'), 'utf8')
 const latestPath = join(dist, 'blog-latest.json')
@@ -104,6 +112,7 @@ const checks = [
   ['地图页', join(dist, 'map', 'index.html')],
   ['音乐馆', join(dist, 'music', 'index.html')],
   ['3D 沙盘', join(dist, 'campus3d', 'index.html')],
+  ['雨夜便利店', join(dist, 'rainy-store', 'index.html')],
   ['音乐馆样式可达', join(dist, 'portal.css')],
 ]
 for (const [label, path] of checks) {

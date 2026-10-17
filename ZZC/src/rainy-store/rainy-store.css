@@ -1,0 +1,37 @@
+/* Standalone rainy-night konbini scene. No chrome: canvas only. */
+html.rs-document,
+html.rs-document body {
+  margin: 0 !important;
+  padding: 0 !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  background: #070a12 !important;
+  color-scheme: dark;
+}
+
+.rs-stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 38%, #1a2238 0%, #0e1423 44%, #05070c 100%);
+  touch-action: none;
+  cursor: grab;
+}
+.rs-stage:active {
+  cursor: grabbing;
+}
+.rs-stage canvas {
+  display: block;
+  outline: none;
+}
+
+/* soft vignette so the miniature reads as an object on a dark table */
+.rs-stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 46%, transparent 42%, rgba(3, 5, 10, 0.22) 74%, rgba(2, 3, 7, 0.6) 100%);
+}
