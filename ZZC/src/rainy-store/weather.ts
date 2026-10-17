@@ -17,7 +17,7 @@ import {
 import { PUDDLES, groundY } from './base'
 import { rippleTexture, streakTexture } from './toon'
 
-const RAIN_COUNT = 5200
+const RAIN_COUNT = 7200
 const RAIN_HEIGHT = 10.5
 /** footprint of every roofed thing on the block: rain is clipped out of them */
 const ROOFS: [number, number, number, number][] = [
@@ -206,7 +206,9 @@ export function buildWeather(rainMats: MeshBasicMaterial[], dripSpots: Vector3[]
   addStreak(-0.2, 0.32, 1.8, 2.2, 0xffc98d, 0.4, 0.078)
   addStreak(1.5, 0.32, 1.2, 1.9, 0xffb877, 0.3, 0.078)
   // spill reaching the main road
-  addStreak(-0.3, 2.45, 3.4, 2.4, 0xffb26f, 0.16)
+  addStreak(-0.3, 2.45, 3.6, 3.4, 0xffb26f, 0.3)
+  addStreak(0.9, 2.5, 2.2, 2.6, 0xffd2a0, 0.22)
+  addStreak(-1.9, 2.5, 2.0, 2.2, 0xffc07a, 0.18)
   // east glass spill
   addStreak(2.2, -0.7, 1.5, 1.6, 0xffbd80, 0.22, 0.078)
   // vending machine glow

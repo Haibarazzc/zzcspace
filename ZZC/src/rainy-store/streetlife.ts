@@ -469,6 +469,26 @@ export function buildStreetLife(parkingSpots: { x: number; z: number; rot: numbe
     group.add(box(0.36, 0.02, 0.02, metal, bx, 3.02, 2.24))
   }
 
+  // two street trees on the south pavement break up the long empty walk
+  const leaf = toonMaterial(0x37543c, { tint: 'cool' })
+  const trunkMat = toonMaterial(0x4a3a2c, { tint: 'warm' })
+  for (const [tx, tz, s0] of [
+    [-1.9, 9.3, 1.0],
+    [4.6, 9.2, 1.15],
+  ] as const) {
+    const tg = new Group()
+    tg.position.set(tx, 0.075, tz)
+    tg.scale.setScalar(s0)
+    tg.add(cylinder(0.09, 0.12, 2.0, 8, trunkMat, 0, 1.0, 0))
+    tg.add(box(1.1, 0.12, 0.7, toonMaterial(0x6d665a, { tint: 'neutral' }), 0, 0.06, 0))
+    for (let i = 0; i < 4; i++) {
+      const r = 1.05 - i * 0.18
+      const ball = sphere(r, leaf, 0, 2.2 + i * 0.5, 0, 10)
+      ball.scale.y = 0.8
+      tg.add(ball)
+    }
+    group.add(tg)
+  }
   // hedge + low wall closing the small lot between the laundry and the izakaya
   const hedge = toonMaterial(0x2f4a37, { tint: 'cool' })
   for (let i = 0; i < 12; i++) group.add(box(0.58, 0.5, 0.5, hedge, -4.9 + i * 0.6, 0.33, 10.35))

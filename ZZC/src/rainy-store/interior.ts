@@ -18,7 +18,7 @@ import {
 } from './toon'
 
 const warmToon = (color: number) => toonMaterial(color, { tint: 'warm' })
-const shelfMat = warmToon(0xd9d3c2)
+const shelfMat = warmToon(0xc2bba7)
 const shelfEdge = wetMaterial(0x8d97a8, 0.35, 0.5)
 const glow = (color: number) => new MeshBasicMaterial({ color, toneMapped: false })
 
@@ -124,7 +124,7 @@ export function buildInterior(): Group {
     for (let l = 1; l <= levels; l++) {
       const y = floorY + (height / (levels + 1)) * l
       unit.add(box(w - 0.05, 0.025, length - 0.05, shelfMat, cx, y, cz))
-      unit.add(box(w - 0.02, 0.05, length - 0.05, glow(0xfff1d4), cx, y - 0.04, cz))
+      unit.add(box(w - 0.02, 0.03, length - 0.05, glow(0xf3d6a6), cx, y - 0.04, cz))
       for (const side of [-1, 1]) {
         const n = Math.floor((length - 0.12) / 0.115)
         for (let i = 0; i < n; i++) {
