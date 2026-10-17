@@ -2,6 +2,7 @@
  *  keep the model alive: auto door, flickering signs, traffic light, weather. */
 import {
   ACESFilmicToneMapping,
+  AdditiveBlending,
   BackSide,
   CanvasTexture,
   Color,
@@ -14,7 +15,10 @@ import {
   MeshBasicMaterial,
   PerspectiveCamera,
   PMREMGenerator,
+  PointLight,
   Scene,
+  Sprite,
+  SpriteMaterial,
   SRGBColorSpace,
   SphereGeometry,
   Texture,
@@ -28,9 +32,12 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js'
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { buildBase } from './base'
+import { buildBlocks } from './blocks'
 import { buildInterior } from './interior'
 import { buildProps } from './props'
 import { buildStore } from './store'
+import { buildStreetLife } from './streetlife'
+import { glowTexture } from './toon'
 import { buildWeather } from './weather'
 
 /** Vertical night-sky gradient wrapped on a big cylinder behind the model. */
@@ -132,7 +139,7 @@ export function createRainyStoreScene(container: HTMLElement): SceneHandle {
   renderer.setSize(container.clientWidth, container.clientHeight)
   renderer.outputColorSpace = SRGBColorSpace
   renderer.toneMapping = ACESFilmicToneMapping
-  renderer.toneMappingExposure = 0.95
+  renderer.toneMappingExposure = 1.08
   renderer.shadowMap.enabled = true
   container.appendChild(renderer.domElement)
 
@@ -140,20 +147,20 @@ export function createRainyStoreScene(container: HTMLElement): SceneHandle {
   scene.background = new Color(0x0b1020)
   const environment = makeEnvironment(renderer)
   scene.background = new Color(0x0a0f1b)
-  scene.fog = new FogExp2(0x101827, 0.018)
+  scene.fog = new FogExp2(0x101827, 0.013)
   scene.environment = environment.env
   scene.environmentIntensity = 0.62
 
-  const camera = new PerspectiveCamera(35, container.clientWidth / container.clientHeight, 0.1, 120)
-  camera.position.set(9.6, 7.7, 11.2)
+  const camera = new PerspectiveCamera(33, container.clientWidth / container.clientHeight, 0.1, 260)
+  camera.position.set(15.5, 16.8, 28.8)
 
   const controls = new OrbitControls(camera, renderer.domElement)
-  controls.target.set(0, 1.0, -0.4)
+  controls.target.set(0.4, 1.05, 0.5)
   controls.enableDamping = true
   controls.dampingFactor = 0.055
   controls.enablePan = false
-  controls.minDistance = 7
-  controls.maxDistance = 25
+  controls.minDistance = 13
+  controls.maxDistance = 78
   controls.minPolarAngle = 0.3
   controls.maxPolarAngle = Math.PI * 0.495
   controls.autoRotate = !window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -166,19 +173,19 @@ export function createRainyStoreScene(container: HTMLElement): SceneHandle {
   renderer.domElement.style.touchAction = 'none'
 
   // ---------------------------------------------------------------- lights
-  const hemi = new HemisphereLight(0x7f95c9, 0x1b1626, 0.72)
+  const hemi = new HemisphereLight(0x8ea3d4, 0x1b1626, 0.82)
   scene.add(hemi)
 
-  const moon = new DirectionalLight(0xa8c4f4, 1.5)
-  moon.position.set(-6.5, 9.5, 7.5)
+  const moon = new DirectionalLight(0xa8c4f4, 1.9)
+  moon.position.set(-13, 19, 15)
   moon.castShadow = true
   moon.shadow.mapSize.set(2048, 2048)
-  moon.shadow.camera.left = -8
-  moon.shadow.camera.right = 8
-  moon.shadow.camera.top = 8
-  moon.shadow.camera.bottom = -8
+  moon.shadow.camera.left = -17
+  moon.shadow.camera.right = 17
+  moon.shadow.camera.top = 17
+  moon.shadow.camera.bottom = -17
   moon.shadow.camera.near = 1
-  moon.shadow.camera.far = 30
+  moon.shadow.camera.far = 60
   moon.shadow.bias = -0.0008
   moon.shadow.normalBias = 0.025
   scene.add(moon)
@@ -200,6 +207,10 @@ export function createRainyStoreScene(container: HTMLElement): SceneHandle {
   world.add(buildInterior())
   const props = buildProps()
   world.add(props.group)
+  const blocks = buildBlocks()
+  world.add(blocks.group)
+  const street = buildStreetLife(blocks.parkingSpots)
+  world.add(street.group)
   const weather = buildWeather(store.rainMats, makeDripSpots())
   world.add(weather.group)
   scene.add(world)
@@ -210,9 +221,9 @@ export function createRainyStoreScene(container: HTMLElement): SceneHandle {
   composer.addPass(new RenderPass(scene, camera))
   const bloom = new UnrealBloomPass(
     new Vector2(container.clientWidth, container.clientHeight),
-    0.34,
-    0.5,
-    0.88,
+    0.45,
+    0.55,
+    0.9,
   )
   composer.addPass(bloom)
   composer.addPass(new OutputPass())
@@ -220,6 +231,35 @@ export function createRainyStoreScene(container: HTMLElement): SceneHandle {
   // keep the last few big surfaces from crushing to grey
   const flickerBase = store.flickerLights.map((l) => l.intensity)
   const barBase = props.barLight.intensity
+  const lanternBase = blocks.lanternMats.map((m) => m.color.clone())
+
+  // ramen steam: a handful of soft sprites drifting up from the pot
+  const steamTex = glowTexture()
+  const steamSpots = blocks.steamSpots.length ? blocks.steamSpots : [new Vector3(9.4, 1.3, -8.4)]
+  const steam: { sprite: Sprite; phase: number; drift: number; home: Vector3 }[] = []
+  for (const spot of steamSpots) {
+    for (let i = 0; i < 8; i++) {
+      const material = new SpriteMaterial({
+        map: steamTex,
+        color: 0xdfe9ff,
+        transparent: true,
+        opacity: 0,
+        blending: AdditiveBlending,
+        depthWrite: false,
+        toneMapped: false,
+      })
+      const sprite = new Sprite(material)
+      sprite.position.copy(spot)
+      sprite.scale.setScalar(0.4)
+      world.add(sprite)
+      steam.push({ sprite, phase: i / 8 + Math.random() * 0.1, drift: (Math.random() - 0.5) * 0.4, home: spot.clone() })
+    }
+  }
+
+  // the parked-by-the-street wheels of the passing truck + its headlight
+  const passing = street.passingCar
+  const passingLight = passing.children.find((c): c is PointLight => (c as PointLight).isPointLight)
+  const CAR_PERIOD = 16
 
   const leftClosed: number = store.doorLeft.userData.closedX
   const leftOpen: number = store.doorLeft.userData.openX
@@ -265,23 +305,24 @@ export function createRainyStoreScene(container: HTMLElement): SceneHandle {
 
   const signal = (t: number) => {
     const phaseT = (t + 4.2) % 13
-    const green = phaseT < 5.6
-    const yellow = phaseT >= 5.6 && phaseT < 7.1
-    const red = phaseT >= 7.1
-    const set = (mat: MeshBasicMaterial, on: boolean, level = 1) => {
-      const f = on ? level : 0.06
+    const on = phaseT < 5.6 ? 0 : phaseT < 7.1 ? 1 : 2 // 0 green, 1 amber, 2 red
+    const set = (mat: MeshBasicMaterial, lit: boolean) => {
+      const f = lit ? 1 : 0.06
       mat.color.setRGB(f, f, f)
     }
-    set(props.vehicleLamp[0], green)
-    set(props.vehicleLamp[1], yellow)
-    set(props.vehicleLamp[2], red)
-    const walk = red && phaseT > 7.6
+    // every head was pushed as three materials (green, amber, red)
+    for (let head = 0; head < props.vehicleLamp.length / 3; head++) {
+      // the side-street head runs the opposite phase of the main street
+      const lit = head === 0 ? on : on === 0 ? 2 : on === 2 ? 0 : 1
+      for (let k = 0; k < 3; k++) set(props.vehicleLamp[head * 3 + k], k === lit)
+    }
+    const walk = on === 2 && phaseT > 7.6
     const blink = phaseT > 11.6 ? Math.sin(phaseT * 26) > 0 : true
     set(props.pedRed, !walk)
     set(props.pedGreen, walk && blink)
-    set(props.farVehicle[0], green)
-    set(props.farVehicle[1], yellow)
-    set(props.farVehicle[2], red)
+    for (let head = 0; head < props.farVehicle.length / 3; head++) {
+      for (let k = 0; k < 3; k++) set(props.farVehicle[head * 3 + k], k === on)
+    }
   }
 
   const flicker = (t: number, seed: number) => {
@@ -314,6 +355,41 @@ export function createRainyStoreScene(container: HTMLElement): SceneHandle {
     props.neon.color.setRGB(0.94 + 0.06 * f, 0.9 + 0.1 * f, 0.94 + 0.06 * f)
     props.barLight.intensity = barBase * (0.85 + 0.15 * Math.sin(elapsed * 9.0))
 
+    // window lights:每扇窗有自己的慢节奏明暗
+    for (let i = 0; i < blocks.windowMats.length; i++) {
+      const p = i * 1.913
+      const slow = Math.sin(elapsed * 0.21 + p) * 0.5 + 0.5
+      const fast = Math.sin(elapsed * 1.7 + p * 3.1) * 0.5 + 0.5
+      const k = 0.62 + 0.3 * slow + 0.08 * fast
+      blocks.windowMats[i].color.setRGB(k, k, k)
+    }
+    // paper lanterns breathe
+    for (let i = 0; i < blocks.lanternMats.length; i++) {
+      const k = 0.82 + 0.18 * Math.sin(elapsed * 2.6 + i * 1.7) * Math.sin(elapsed * 0.9 + i)
+      blocks.lanternMats[i].color.copy(lanternBase[i]).multiplyScalar(k)
+    }
+    // ramen steam rising and fading
+    for (const s of steam) {
+      const life = (elapsed * 0.22 + s.phase) % 1
+      s.sprite.position.y = s.home.y + life * 1.5
+      s.sprite.position.x = s.home.x + s.drift * life
+      s.sprite.scale.setScalar(0.3 + life * 0.75)
+      ;(s.sprite.material as SpriteMaterial).opacity = Math.sin(life * Math.PI) * 0.2
+    }
+    // a kei-truck drives past every so often
+    const cp = (elapsed % CAR_PERIOD) / CAR_PERIOD
+    passing.position.x = -10.6 + cp * 21.2
+    passing.position.z = 5.7
+    passing.rotation.y = Math.PI / 2
+    passing.visible = cp > 0.04 && cp < 0.96
+    if (passingLight) passingLight.intensity = 2.2
+    for (const w of street.passingWheels) w.rotation.z += dt * 9
+    // cat tails
+    street.cats.forEach((c, i) => {
+      c.tail.rotation.z = Math.sin(elapsed * 1.5 + i * 2.1) * 0.22
+      c.tail.rotation.x = Math.sin(elapsed * 0.7 + i) * 0.12
+    })
+
     weather.update(dt, elapsed)
     controls.update()
     composer.render()
@@ -322,16 +398,24 @@ export function createRainyStoreScene(container: HTMLElement): SceneHandle {
   }
   tick()
 
+  // keep the whole plinth in view on narrow / portrait screens: hold the
+  // horizontal field of view constant instead of the vertical one
+  const REF_ASPECT = 1.6
+  const REF_TAN = Math.tan((33 * Math.PI) / 360) * REF_ASPECT
   const onResize = () => {
     const w = container.clientWidth
     const h = container.clientHeight
     if (!w || !h) return
-    camera.aspect = w / h
+    const aspect = w / h
+    camera.aspect = aspect
+    const fov = aspect < REF_ASPECT ? (2 * Math.atan(REF_TAN / aspect) * 180) / Math.PI : 33
+    camera.fov = Math.min(fov, 74)
     camera.updateProjectionMatrix()
     renderer.setSize(w, h)
     composer.setSize(w, h)
     bloom.setSize(w, h)
   }
+  onResize()
   window.addEventListener('resize', onResize)
   const observer = new ResizeObserver(onResize)
   observer.observe(container)

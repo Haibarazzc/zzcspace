@@ -14,11 +14,29 @@ import {
   SphereGeometry,
   Vector3,
 } from 'three'
-import { PUDDLES } from './base'
+import { PUDDLES, groundY } from './base'
 import { rippleTexture, streakTexture } from './toon'
 
-const RAIN_COUNT = 3600
-const RAIN_HEIGHT = 9
+const RAIN_COUNT = 5200
+const RAIN_HEIGHT = 10.5
+/** footprint of every roofed thing on the block: rain is clipped out of them */
+const ROOFS: [number, number, number, number][] = [
+  [-2.95, 2.35, -3.55, 0.55], // konbini
+  [-5.05, -3.85, -3.7, 0.4], // neighbour house
+  [-8.95, -5.3, -3.75, 0.1], // apartment
+  [-10.35, -5.25, -10.85, -4.75], // warehouse
+  [-4.95, -1.55, -10.0, -4.9], // back house
+  [8.8, 10.95, -11.35, -5.65], // ramen shop
+  [-9.85, -4.75, 7.1, 11], // laundry
+  [-3.95, 1.85, 7.1, 11], // izakaya
+  [0.3, 1.9, 8.4, 9.6], // bus shelter
+  [-7.35, -6.45, 1.15, 2.05], // phone booth
+  [2.9, 3.9, -3.9, -3.2], // neighbour overhang
+]
+function underRoof(x: number, z: number): boolean {
+  for (const [x0, x1, z0, z1] of ROOFS) if (x > x0 && x < x1 && z > z0 && z < z1) return true
+  return false
+}
 
 interface Drip {
   mesh: Mesh
@@ -40,13 +58,11 @@ function makeRain(): { points: Points; material: ShaderMaterial } {
   const speed: number[] = []
   const size: number[] = []
   let guard = 0
-  while (pos.length / 3 < RAIN_COUNT && guard < RAIN_COUNT * 12) {
+  while (pos.length / 3 < RAIN_COUNT && guard < RAIN_COUNT * 10) {
     guard++
-    const x = (Math.random() - 0.5) * 11.2
-    const z = (Math.random() - 0.5) * 11.2
-    // keep the rain out of the shop and the neighbour house
-    if (x > -2.95 && x < 2.35 && z > -3.55 && z < 0.55) continue
-    if (x > -5.05 && x < -3.85 && z > -3.7 && z < 0.4) continue
+    const x = (Math.random() - 0.5) * 21.4
+    const z = (Math.random() - 0.5) * 21.4
+    if (underRoof(x, z)) continue
     pos.push(x, Math.random() * RAIN_HEIGHT, z)
     speed.push(6.5 + Math.random() * 5.5)
     size.push(0.8 + Math.random() * 1.4)
@@ -204,6 +220,31 @@ export function buildWeather(rainMats: MeshBasicMaterial[], dripSpots: Vector3[]
   addStreak(-3.3, -0.4, 0.8, 1.6, 0xff6fa8, 0.2)
   // warm light under the awning
   addStreak(0.3, 1.0, 1.5, 1.1, 0xffcf94, 0.2, 0.078)
+  // ---- the rest of the block
+  // apartment corridor light on the alley pavement
+  addStreak(-7.0, 0.3, 2.4, 1.8, 0xffc98d, 0.16, 0.078)
+  // warehouse sodium lamp in the service lane
+  addStreak(-7.8, -4.6, 2.2, 2.0, 0xffd9a0, 0.14)
+  // ramen shop: warm opening spilling into the side street
+  addStreak(9.0, -7.4, 1.5, 2.4, 0xffa870, 0.24)
+  addStreak(8.4, -8.6, 1.2, 1.8, 0xffc084, 0.16)
+  // coin laundry: cyan wash on the south pavement
+  addStreak(-7.3, 7.2, 3.4, 1.7, 0x9fd8ff, 0.22, 0.078)
+  // izakaya lanterns
+  addStreak(-1.0, 7.2, 2.6, 1.6, 0xffb07a, 0.2, 0.078)
+  // bus shelter lamp
+  addStreak(0.55, 6.9, 1.4, 1.4, 0xffe0b0, 0.16, 0.078)
+  // phone booth
+  addStreak(-6.9, 2.1, 0.8, 1.2, 0xbfe6ff, 0.2, 0.078)
+  // coin parking floodlight + vending bank
+  addStreak(9.9, 0.2, 2.0, 2.6, 0xbfe0ff, 0.12)
+  addStreak(-4.5, 7.8, 1.6, 1.5, 0xffa890, 0.18, 0.078)
+  // street lamp at the east corner
+  addStreak(7.3, 2.6, 1.6, 3.0, 0xffd9a0, 0.16)
+  // shrine lantern path
+  addStreak(-9.8, 0.4, 1.1, 1.6, 0xffb877, 0.12, 0.078)
+  // far crosswalk signal
+  addStreak(-8.4, 3.1, 0.7, 1.8, 0x6fffc0, 0.1)
 
   // ------------------------------------------------------------------ update
   const glassMats = [...new Set(rainMats)]
@@ -219,13 +260,12 @@ export function buildWeather(rainMats: MeshBasicMaterial[], dripSpots: Vector3[]
           const p = PUDDLES[Math.floor(Math.random() * PUDDLES.length)]
           const a = Math.random() * Math.PI * 2
           const r = Math.sqrt(Math.random())
-          ripples.spawn(p.x + Math.cos(a) * p.rx * r * 0.8, p.z + Math.sin(a) * p.rz * r * 0.8, 0.017)
+          ripples.spawn(p.x + Math.cos(a) * p.rx * r * 0.8, p.z + Math.sin(a) * p.rz * r * 0.8, p.y + 0.009)
         } else {
-          const x = (Math.random() - 0.5) * 9.4
-          const z = (Math.random() - 0.5) * 9.4
-          if (x > -2.9 && x < 2.3 && z > -3.5 && z < 0.5) continue
-          if (z > 0.28 && z < 2.5 && x > -2.7 && x < 3.5) ripples.spawn(x, z, 0.079)
-          else ripples.spawn(x, z, 0.017)
+          const x = (Math.random() - 0.5) * 20.6
+          const z = (Math.random() - 0.5) * 20.6
+          if (underRoof(x, z)) continue
+          ripples.spawn(x, z, groundY(x, z) + 0.007)
         }
       }
     }

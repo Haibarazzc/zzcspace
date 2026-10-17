@@ -1,6 +1,6 @@
 /** Shared dimensions and the night palette of the rainy-corner diorama. */
 
-export const BASE_SIZE = 10
+export const BASE_SIZE = 22
 export const BASE_HEIGHT = 0.34
 export const SIDEWALK_Y = 0.072
 export const ROAD_Y = 0.004
@@ -22,6 +22,21 @@ export const STORE = {
   doorTop: 2.5,
   eastGlassZ0: -1.5,
   eastGlassZ1: 0.18,
+} as const
+
+/** Street grid of the block (metres, base centred on the origin). */
+export const LAYOUT = {
+  /** main street runs east-west */
+  main: { z0: 2.8, z1: 6.8 },
+  /** side street runs north, forming a T with the main street */
+  side: { x0: 3.4, x1: 7.4 },
+  /** pavements */
+  northWalk: { z0: 0.2, z1: 2.8 },
+  southWalk: { z0: 6.8, z1: 8.2 },
+  westWalk: { x0: 2.1, x1: 3.4 },
+  eastWalk: { x0: 7.4, x1: 8.8 },
+  /** the service lane behind the shops */
+  backLane: { z0: -4.7, z1: -3.7 },
 } as const
 
 export const COL = {

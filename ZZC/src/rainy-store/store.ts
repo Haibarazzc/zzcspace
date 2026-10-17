@@ -25,6 +25,7 @@ import {
   plane,
   signTexture,
   signWideTexture,
+  glowTexture,
   streakTexture,
   toonMaterial,
   wetMaterial,
@@ -178,6 +179,19 @@ export function buildStore(): StoreParts {
   group.add(sheen(1.9, 2.5, -1.72, 1.5, 0.377, 0, 0.2, 0.085))
   group.add(sheen(1.1, 2.4, 1.28, 1.45, 0.377, 0, -0.26, 0.06))
   group.add(sheen(1.3, 2.4, 2.115, 1.5, -0.8, Math.PI / 2, 0.22, 0.07))
+
+  // warm bloom card just behind the glass: the shop must glow from far away
+  const glowMat = new MeshBasicMaterial({
+    map: glowTexture(),
+    color: 0xffbe86,
+    transparent: true,
+    opacity: 0.15,
+    depthWrite: false,
+    blending: AdditiveBlending,
+    toneMapped: false,
+  })
+  group.add(plane(5.4, 2.7, glowMat, -0.3, 1.45, 0.33))
+  group.add(plane(3.4, 2.7, glowMat, 2.02, 1.45, -0.66, 0, Math.PI / 2))
 
   // ------------------------------------------------------------ sliding door
   const doorLeft = doorPanel(0.6)

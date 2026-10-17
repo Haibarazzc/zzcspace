@@ -160,18 +160,18 @@ function signalHead(facing = 0): Group {
   return g
 }
 
-function pedSignal(): { group: Group; red: MeshBasicMaterial; green: MeshBasicMaterial } {
+function pedSignal(red?: MeshBasicMaterial, green?: MeshBasicMaterial): { group: Group; red: MeshBasicMaterial; green: MeshBasicMaterial } {
   const g = new Group()
   g.add(box(0.32, 0.62, 0.16, wetMaterial(0x30353f, 0.4, 0.45), 0, 0, 0))
   g.add(box(0.36, 0.04, 0.2, wetMaterial(0x22262e, 0.4, 0.45), 0, 0.32, 0))
-  const red = new MeshBasicMaterial({ color: 0xff4d4d, toneMapped: false, transparent: true, opacity: 0.2 })
-  const green = new MeshBasicMaterial({ color: 0x5ce6a0, toneMapped: false, transparent: true, opacity: 0.2 })
-  const top = new Mesh(new CircleGeometry(0.1, 16), red)
+  const rMat = red ?? new MeshBasicMaterial({ color: 0xff4d4d, toneMapped: false, transparent: true, opacity: 0.2 })
+  const gMat = green ?? new MeshBasicMaterial({ color: 0x5ce6a0, toneMapped: false, transparent: true, opacity: 0.2 })
+  const top = new Mesh(new CircleGeometry(0.1, 16), rMat)
   top.position.set(0, 0.14, 0.085)
-  const bottom = new Mesh(new CircleGeometry(0.1, 16), green)
+  const bottom = new Mesh(new CircleGeometry(0.1, 16), gMat)
   bottom.position.set(0, -0.16, 0.085)
   g.add(top, bottom)
-  return { group: g, red, green }
+  return { group: g, red: rMat, green: gMat }
 }
 
 export function buildProps(): PropsParts {
@@ -239,6 +239,13 @@ export function buildProps(): PropsParts {
   group.add(poleB)
   const poleC = utilityPole(-4.55, -3.2, 4.1, false)
   group.add(poleC)
+  // the block got bigger: three more poles carry the wires along the streets
+  const poleD = utilityPole(-9.6, 2.35, 4.6, true)
+  group.add(poleD)
+  const poleE = utilityPole(8.05, 2.42, 4.9, true)
+  group.add(poleE)
+  const poleF = utilityPole(8.05, -6.2, 4.4, true)
+  group.add(poleF)
 
   const sag = (a: Vector3, b: Vector3, drop: number): Vector3[] => {
     const pts: Vector3[] = []
@@ -261,10 +268,32 @@ export function buildProps(): PropsParts {
   addWire(new Vector3(3.18, 4.3, 2.3), new Vector3(2.1, 3.7, 0.3), 0.15)
   addWire(new Vector3(3.18, 4.6, 2.3), new Vector3(3.18, 4.4, -5.0), 0.5)
   addWire(new Vector3(-4.6, 4.0, 2.36), new Vector3(-4.55, 3.9, -3.2), 0.4)
+  // west run, east run and the side street
+  for (let w = 0; w < 2; w++) {
+    addWire(new Vector3(-4.6 - 0.4 + w * 0.4, 4.0 - w * 0.04, 2.36), new Vector3(-9.6 - 0.3 + w * 0.4, 4.1 - w * 0.04, 2.35), 1.0)
+  }
+  for (let w = 0; w < 2; w++) {
+    addWire(new Vector3(3.18 + w * 0.35, 4.52 - w * 0.05, 2.3), new Vector3(8.05 - 0.35 + w * 0.35, 4.45 - w * 0.05, 2.42), 1.0)
+  }
+  for (let w = 0; w < 2; w++) {
+    addWire(new Vector3(8.05 + w * 0.25, 4.4 - w * 0.06, 2.42), new Vector3(8.05 + w * 0.25, 4.05 - w * 0.06, -6.2), 0.9)
+  }
+  // service lane cable from the warehouse to the shop roofs
+  addWire(new Vector3(-5.3, 4.4, -4.6), new Vector3(-2.9, 3.6, -3.4), 0.4)
   // street lamp light
   const lampLight = new PointLight(0xffdda8, 10, 12, 2)
   lampLight.position.set(2.46, 3.75, 2.98)
   group.add(lampLight)
+  // the west end and the side street get their own lamps
+  const lampWest = new PointLight(0xffdda8, 9, 11, 2)
+  lampWest.position.set(-10.32, 3.38, 3.03)
+  group.add(lampWest)
+  const lampSide = new PointLight(0xffdda8, 8, 10, 2)
+  lampSide.position.set(7.33, 3.18, -5.52)
+  group.add(lampSide)
+  const lampEast = new PointLight(0xffdda8, 9, 11, 2)
+  lampEast.position.set(7.33, 3.68, 3.1)
+  group.add(lampEast)
 
   // ------------------------------------------------------------ traffic signals
   const sig = new Group()
@@ -288,11 +317,30 @@ export function buildProps(): PropsParts {
   ped.group.position.set(-0.35, -0.55, 0.3)
   sig.add(ped.group)
   group.add(sig)
-  // small far signal across the street
+  // second signal over the side street, on the east corner pole
+  const sig2 = new Group()
+  sig2.position.set(8.05, 3.0, 2.42)
+  sig2.add(box(0.05, 0.05, 0.95, pipeDark, -0.12, 0.1, -0.55))
+  const head2 = signalHead(Math.PI)
+  head2.position.set(-0.2, 0.1, -0.98)
+  ;[0x38d98a, 0xf0c94a, 0xff4d4d].forEach((color, i) => {
+    const mat = new MeshBasicMaterial({ color, toneMapped: false, transparent: true, opacity: 0.18 })
+    const face = new Mesh(new CircleGeometry(0.085, 14), mat)
+    face.position.set(-0.2 + i * 0.2, 0, 0.095)
+    head2.add(face)
+    vehicleLamp.push(mat)
+  })
+  sig2.add(head2)
+  const ped2 = pedSignal(ped.red, ped.green)
+  ped2.group.position.set(0.3, -0.55, -0.35)
+  ped2.group.rotation.y = Math.PI / 2
+  sig2.add(ped2.group)
+  group.add(sig2)
+  // small far signal across the street at the west crosswalk
   const far = new Group()
-  far.position.set(4.55, 2.35, 4.55)
+  far.position.set(-8.4, 2.35, 6.95)
   far.add(cylinder(0.05, 0.06, 2.35, 8, poleMat, 0, 1.17, 0))
-  const farHead = signalHead(-Math.PI / 2)
+  const farHead = signalHead(Math.PI)
   farHead.position.set(-0.1, 0, 0)
   farHead.scale.setScalar(0.7)
   ;[0x38d98a, 0xf0c94a, 0xff4d4d].forEach((color, i) => {
@@ -315,7 +363,7 @@ export function buildProps(): PropsParts {
   signPost.add(plate)
   group.add(signPost)
 
-  const parking = plane(0.42, 0.42, new MeshBasicMaterial({ map: parkingSignTexture(), toneMapped: false, side: DoubleSide }), -2.7, 1.55, 4.9)
+  const parking = plane(0.42, 0.42, new MeshBasicMaterial({ map: parkingSignTexture(), toneMapped: false, side: DoubleSide }), -8.0, 1.55, 7.05)
   parking.rotation.y = Math.PI
   const parkingPost = cylinder(0.03, 0.035, 1.5, 8, metal, -2.7, 0.8, 4.93)
   group.add(parking, parkingPost)
