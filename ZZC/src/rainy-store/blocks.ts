@@ -659,6 +659,13 @@ function coinLaundry(): Group {
   bin.position.set(cx - 2.6, 0, bz + 0.6)
   bin.rotation.y = Math.PI / 2 - 0.1
   g.add(bin)
+  // red lantern under the back eave: a warm accent in the camera-facing mass
+  g.add(cylinder(0.03, 0.03, 0.26, 6, wetMaterial(0x2a2420, 0.6, 0.2), cx + 1.0, 2.28, bz + 0.46))
+  g.add(cylinder(0.17, 0.17, 0.34, 12, toonMaterial(0xd8543f, { tint: 'warm' }), cx + 1.0, 2.02, bz + 0.46))
+  g.add(cylinder(0.18, 0.18, 0.05, 12, new MeshBasicMaterial({ color: 0xffb478, toneMapped: false }), cx + 1.0, 2.02, bz + 0.46))
+  const lanLight = new PointLight(0xff7a52, 1.8, 3.6, 2)
+  lanLight.position.set(cx + 1.0, 1.85, bz + 0.7)
+  g.add(lanLight)
   const backLamp = new PointLight(0xffcf94, 1.5, 4, 2)
   backLamp.position.set(cx + 1.6, 1.9, bz + 0.7)
   g.add(backLamp)
@@ -739,9 +746,18 @@ function izakaya(): { group: Group; lanternMats: MeshBasicMaterial[] } {
   bike.position.set(cx - 2.5, 0, bz + 0.55)
   bike.rotation.y = Math.PI / 2 + 0.1
   g.add(bike)
+  // two paper lanterns under the back eave: the warm accent of the near corner
+  for (const lx of [-1.1, 2.4]) {
+    g.add(cylinder(0.03, 0.03, 0.3, 6, wetMaterial(0x2a2420, 0.6, 0.2), cx + lx, 2.26, bz + 0.46))
+    g.add(cylinder(0.18, 0.18, 0.36, 12, toonMaterial(0xd8543f, { tint: 'warm' }), cx + lx, 1.98, bz + 0.46))
+    g.add(cylinder(0.19, 0.19, 0.05, 12, new MeshBasicMaterial({ color: 0xffb478, toneMapped: false }), cx + lx, 1.98, bz + 0.46))
+  }
   const backLamp = new PointLight(0xffb877, 1.8, 4.5, 2)
   backLamp.position.set(cx + 1.4, 1.9, bz + 0.8)
   g.add(backLamp)
+  const lanLight = new PointLight(0xff7a52, 2.0, 4.0, 2)
+  lanLight.position.set(cx + 0.6, 1.9, bz + 0.8)
+  g.add(lanLight)
   // side wall details (visible from the east)
   const ex = cx + w / 2 + 0.01
   windowAt(g, 0.7, 0.7, ex, 2.3, cz + 0.2, 'x', 2, false)

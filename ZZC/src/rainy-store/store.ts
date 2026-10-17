@@ -185,7 +185,7 @@ export function buildStore(): StoreParts {
     map: glowTexture(),
     color: 0xffbe86,
     transparent: true,
-    opacity: 0.15,
+    opacity: 0.2,
     depthWrite: false,
     blending: AdditiveBlending,
     toneMapped: false,
@@ -331,8 +331,8 @@ export function buildStore(): StoreParts {
     lights.push(l)
     return l
   }
-  addPoint(-1.2, 2.55, -0.8, 0xffd2a0, 15, 6.5)
-  addPoint(0.9, 2.5, -1.9, 0xffd9ae, 12.5, 6.5)
+  addPoint(-1.2, 2.55, -0.8, 0xffc482, 15, 6.5)
+  addPoint(0.9, 2.5, -1.9, 0xffca92, 12.5, 6.5)
   addPoint(-1.5, 2.2, -2.6, 0xfff0d0, 6, 4)
   addPoint(1.6, 1.9, -0.9, 0xfff4e2, 2.2, 3.5)
   addPoint(0.3, 2.15, -0.55, 0xffd9a0, 3, 2.6)
