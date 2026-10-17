@@ -1,5 +1,5 @@
 import * as T from 'three'
-import { blossomRandom } from './model'
+import { blossomRandom, createPetalGeometry } from './model'
 import { buildCherryGrove } from './grove'
 
 const peaks=[[-45,-34,17,20],[-17,-59,24,18],[20,-61,21,20],[52,-29,22,22],[-59,13,19,22],[59,27,18,24],[-40,65,22,25],[27,76,23,24],[-49,-91,29,24],[54,-93,31,26]]
@@ -90,5 +90,38 @@ export function buildLandscape() {
     rocks.setMatrixAt(i,dummy.matrix);rocks.setColorAt(i,new T.Color(i%3?'#8e9189':'#757e7d'))
   }
   rocks.name='stream-bank-stones';rocks.receiveShadow=true;rocks.computeBoundingSphere();group.add(rocks)
+
+  // Rushes and reeds gather in the shallows, softening the channel's cut edge.
+  const reedBlades:number[]=[]
+  for(let i=0;i<6;i++){
+    const angle=i*2.399,dx=Math.cos(angle),dz=Math.sin(angle)
+    reedBlades.push(-dz*.06,0,dx*.06,dz*.06,0,-dx*.06,dx*.18,.8+(i%3)*.16,dz*.18)
+  }
+  const reedGeometry=new T.BufferGeometry();reedGeometry.setAttribute('position',new T.Float32BufferAttribute(reedBlades,3));reedGeometry.computeVertexNormals()
+  const reedStems:T.Matrix4[]=[],reedColors:T.Color[]=[],reed=new T.Object3D()
+  for(let i=0;i<520;i++){
+    const z=-78+blossomRandom(i+4200)*156,side=i%2?1:-1
+    const x=streamX(z)+side*(2.5+blossomRandom(i+4300)*1.7),y=groundHeight(x,z)
+    if(y>-0.1||y<-0.82)continue
+    reed.position.set(x,y-.02,z);reed.rotation.y=blossomRandom(i+4400)*Math.PI*2
+    reed.scale.setScalar(.7+blossomRandom(i+4500)*.55);reed.updateMatrix()
+    reedStems.push(reed.matrix.clone());reedColors.push(new T.Color(i%3?'#57684a':'#6a7650'))
+  }
+  const reeds=new T.InstancedMesh(reedGeometry,new T.MeshStandardMaterial({side:T.DoubleSide,roughness:1}),reedStems.length)
+  reedStems.forEach((matrix,i)=>{reeds.setMatrixAt(i,matrix);reeds.setColorAt(i,reedColors[i])})
+  reeds.name='stream-bank-reeds';reeds.receiveShadow=true;reeds.computeBoundingSphere();group.add(reeds)
+
+  // Fallen petals rest on the current instead of vanishing into the water colour.
+  const petalGeometry=createPetalGeometry(3),floaters:T.Matrix4[]=[],floaterColors:T.Color[]=[],floater=new T.Object3D()
+  for(let i=0;i<150;i++){
+    const z=-85+blossomRandom(i+5100)*170,width=1.48+Math.sin(z*.055)*.22
+    floater.position.set(streamX(z)+(blossomRandom(i+5200)-.5)*width*1.4,-.742,z)
+    floater.rotation.set(-Math.PI/2,0,blossomRandom(i+5300)*Math.PI*2)
+    floater.scale.setScalar(.09+blossomRandom(i+5400)*.06);floater.updateMatrix()
+    floaters.push(floater.matrix.clone());floaterColors.push(new T.Color(i%3?'#ffd8e9':'#fff1f0'))
+  }
+  const petals=new T.InstancedMesh(petalGeometry,new T.MeshStandardMaterial({side:T.DoubleSide,roughness:.8,emissive:'#d69cb6',emissiveIntensity:.18}),floaters.length)
+  floaters.forEach((matrix,i)=>{petals.setMatrixAt(i,matrix);petals.setColorAt(i,floaterColors[i])})
+  petals.name='stream-floating-petals';petals.computeBoundingSphere();group.add(petals)
   return group
 }

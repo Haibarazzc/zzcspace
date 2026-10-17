@@ -105,7 +105,7 @@ function Atmosphere({time,reduced}:{time:TimeOfDay;reduced:boolean}) {
     <hemisphereLight ref={fill} args={['#d5dff3','#56484f',settings.ambient]}/>
     <directionalLight ref={sun} position={settings.position} intensity={settings.sunPower} color={settings.sun} castShadow shadow-mapSize={[2048,2048]} shadow-camera-left={-40} shadow-camera-right={40} shadow-camera-top={40} shadow-camera-bottom={-40} shadow-camera-far={350} shadow-normalBias={.025} shadow-bias={-.00008}/>
     <directionalLight ref={bounce} position={[15,16,20]} intensity={.95} color="#c5d6f1"/>
-    <Celestial time={time}/>
+    <Celestial time={time} reduced={reduced}/>
     <Petals reduced={reduced}/>
   </>
 }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import * as T from 'three'
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js'
-import { blossomRandom as random } from './sakuraGrove'
+import { blossomRandom as random, BLOSSOM_COLORS, createPetalGeometry } from './sakuraGrove'
 
 function grainTexture(grass: boolean) {
   const size = 128, bytes = new Uint8Array(size * size * 4)
@@ -109,12 +109,49 @@ function buildGround() {
   pebbles.raycast = () => {}
   pebbles.computeBoundingSphere()
   group.add(pebbles)
+
+  // Fallen blossoms rest where the wind left them: a few clusters on the
+  // paving edge, the rest on the lawn. These are static, unlike the drifting
+  // Motes in World.tsx.
+  const petalGeometry = createPetalGeometry(2)
+  const petalMaterial = new T.MeshStandardMaterial({ roughness: 1, side: T.DoubleSide })
+  const petalSpots: { x: number; y: number; z: number }[] = []
+  for (let cluster = 0; cluster < 14; cluster++) {
+    const onPaving = cluster < 3
+    const angle = random(cluster * 31 + 7) * Math.PI * 2
+    const radius = onPaving ? 1.94 + random(cluster * 17 + 3) * 0.24 : 2.55 + random(cluster * 23 + 5) * 2.25
+    let cx = Math.cos(angle) * radius, cz = Math.sin(angle) * radius
+    // Keep the pond clear so petals never appear to float on the water.
+    if (!onPaving && ((cx - 3.6) / 1.45) ** 2 + ((cz - 2.6) / 1.05) ** 2 < 1) { cx = -cx; cz = -cz }
+    const count = 4 + Math.floor(random(cluster * 41 + 11) * 4)
+    for (let p = 0; p < count; p++) {
+      const a = random(cluster * 53 + p * 7 + 13) * Math.PI * 2
+      const r = random(cluster * 59 + p * 11 + 17) * (onPaving ? 0.1 : 0.2)
+      petalSpots.push({ x: cx + Math.cos(a) * r, y: onPaving ? 0.0275 : 0.011, z: cz + Math.sin(a) * r })
+    }
+  }
+  const petals = new T.InstancedMesh(petalGeometry, petalMaterial, petalSpots.length)
+  const petalDummy = new T.Object3D()
+  petalSpots.forEach((spot, index) => {
+    petalDummy.position.set(spot.x, spot.y, spot.z)
+    petalDummy.rotation.set(-Math.PI / 2 + (random(index * 13 + 9) - 0.5) * 0.16, 0, random(index * 19 + 3) * Math.PI * 2)
+    petalDummy.scale.setScalar(0.032 + random(index * 71 + 23) * 0.026)
+    petalDummy.updateMatrix()
+    petals.setMatrixAt(index, petalDummy.matrix)
+    petals.setColorAt(index, new T.Color(BLOSSOM_COLORS[Math.floor(random(index * 29 + 31) * BLOSSOM_COLORS.length)]))
+  })
+  petals.instanceMatrix.needsUpdate = true
+  if (petals.instanceColor) petals.instanceColor.needsUpdate = true
+  petals.receiveShadow = true
+  petals.raycast = () => {}
+  petals.computeBoundingSphere()
+  group.add(petals)
   return {
     group,
     dispose() {
       group.traverse(object => { if (object instanceof T.Mesh) object.geometry.dispose() })
-      pebbles.dispose()
-      for (const material of [grassMaterial, pavingMaterial, groutMaterial, stageMaterial, bronzeMaterial, pebbleMaterial]) material.dispose()
+      pebbles.dispose(); petals.dispose()
+      for (const material of [grassMaterial, pavingMaterial, groutMaterial, stageMaterial, bronzeMaterial, pebbleMaterial, petalMaterial]) material.dispose()
       grass.dispose(); stone.dispose()
     },
   }

@@ -1,7 +1,8 @@
-import { useMemo, useRef } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useEffect, useMemo, useRef } from 'react'
+import { useFrame, useThree } from '@react-three/fiber'
 import * as T from 'three'
 import { times, type TimeOfDay } from './data'
+import { blossomRandom } from './model'
 
 const vertex=`varying vec2 vUv; varying vec3 vDirection;
 void main(){vUv=uv;vDirection=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`
@@ -29,7 +30,13 @@ const sky=`varying vec3 vDirection;uniform vec3 horizon;uniform vec3 zenith;unif
 void main(){vec3 ray=normalize(vDirection);float altitude=smoothstep(-.08,.65,ray.y);
 vec3 color=mix(horizon,zenith,altitude);color+=warmth*pow(max(0.,dot(ray,direction)),32.)*glow;
 gl_FragColor=vec4(color,1.);}`
-
+const starVertex=`attribute float size;attribute float phase;attribute vec3 starColor;
+varying vec3 vColor;varying float vTwinkle;uniform float uTime;uniform float uTwinkle;
+void main(){vColor=starColor;vTwinkle=.78+.22*sin(uTime*1.35+phase)*uTwinkle;
+gl_PointSize=size;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`
+const starFragment=`varying vec3 vColor;varying float vTwinkle;uniform float uOpacity;
+void main(){vec2 p=gl_PointCoord*2.-1.;float r=length(p);if(r>1.)discard;
+float a=1.-smoothstep(.2,1.,r);gl_FragColor=vec4(vColor,a*uOpacity*vTwinkle);}`
 function Orb({time,moon}:{time:TimeOfDay;moon:boolean}) {
   const group=useRef<T.Group>(null)
   const bodyMaterial=useRef<T.ShaderMaterial>(null),haloMaterial=useRef<T.ShaderMaterial>(null)
@@ -50,21 +57,54 @@ function Orb({time,moon}:{time:TimeOfDay;moon:boolean}) {
   </group>
 }
 
-export default function Celestial({time}:{time:TimeOfDay}) {
-  const background=useRef<T.Mesh>(null)
+function StarField({time,reduced}:{time:TimeOfDay;reduced:boolean}) {
+  const geometry=useMemo(()=>{
+    const count=1400,positions=new Float32Array(count*3),sizes=new Float32Array(count),phases=new Float32Array(count),colors=new Float32Array(count*3)
+    const color=new T.Color()
+    for(let i=0;i<count;i++){
+      const y=.004+blossomRandom(i+31)*.975,angle=blossomRandom(i+32)*Math.PI*2,radius=Math.sqrt(1-y*y)*270
+      positions[i*3]=Math.cos(angle)*radius;positions[i*3+1]=y*270;positions[i*3+2]=Math.sin(angle)*radius
+      sizes[i]=1.5+Math.pow(blossomRandom(i+33),2.4)*3.4
+      phases[i]=blossomRandom(i+34)*Math.PI*2
+      color.set(blossomRandom(i+35)>.82?'#ffe9cf':'#dfe8ff').multiplyScalar(.9+blossomRandom(i+36)*1.1)
+      colors[i*3]=color.r;colors[i*3+1]=color.g;colors[i*3+2]=color.b
+    }
+    const geometry=new T.BufferGeometry()
+    geometry.setAttribute('position',new T.BufferAttribute(positions,3))
+    geometry.setAttribute('size',new T.BufferAttribute(sizes,1))
+    geometry.setAttribute('phase',new T.BufferAttribute(phases,1))
+    geometry.setAttribute('starColor',new T.BufferAttribute(colors,3))
+    return geometry
+  },[])
+  useEffect(()=>()=>geometry.dispose(),[geometry])
+  const uniforms=useMemo(()=>({uOpacity:{value:0},uTime:{value:0},uTwinkle:{value:reduced?0:1}}),[reduced])
+  useFrame((_,dt)=>{
+    uniforms.uOpacity.value=T.MathUtils.damp(uniforms.uOpacity.value,time==='night'?1:time==='dusk'?.12:0,1.6,dt)
+    uniforms.uTime.value+=dt
+  })
+  return <points geometry={geometry} renderOrder={-5} name="valley-stars" frustumCulled={false}>
+    <shaderMaterial vertexShader={starVertex} fragmentShader={starFragment} uniforms={uniforms} transparent depthWrite={false} blending={T.AdditiveBlending}/>
+  </points>
+}
+
+export default function Celestial({time,reduced}:{time:TimeOfDay;reduced:boolean}) {
+  const skyGroup=useRef<T.Group>(null)
   const skyMaterial=useRef<T.ShaderMaterial>(null)
   const uniforms=useMemo(()=>({horizon:{value:new T.Color(times[time].background)},zenith:{value:new T.Color('#617f9e')},direction:{value:new T.Vector3(...times[time].position).normalize()},warmth:{value:new T.Color('#ffcfa8')},glow:{value:.25}}),[])
   const colors=useMemo(()=>({horizon:new T.Color(times[time].background),zenith:new T.Color(time==='night'?'#070d22':time==='dusk'?'#584567':'#617f9e'),direction:new T.Vector3(...times[time].position).normalize()}),[time])
   useFrame(({camera},dt)=>{
     if(!skyMaterial.current)return
     const uniforms=skyMaterial.current.uniforms
-    background.current?.position.copy(camera.position)
+    skyGroup.current?.position.copy(camera.position)
     const t=1-Math.exp(-dt*2)
     uniforms.horizon.value.lerp(colors.horizon,t);uniforms.zenith.value.lerp(colors.zenith,t);uniforms.direction.value.lerp(colors.direction,t)
     uniforms.glow.value=T.MathUtils.damp(uniforms.glow.value,time==='night'?0:time==='dusk'?.45:.25,2,dt)
   })
   return <>
-    <mesh ref={background} renderOrder={-10} name="valley-sky"><sphereGeometry args={[300,32,16]}/><shaderMaterial ref={skyMaterial} vertexShader={vertex} fragmentShader={sky} uniforms={uniforms} side={T.BackSide} depthWrite={false}/></mesh>
+    <group ref={skyGroup}>
+      <mesh renderOrder={-10} name="valley-sky"><sphereGeometry args={[300,32,16]}/><shaderMaterial ref={skyMaterial} vertexShader={vertex} fragmentShader={sky} uniforms={uniforms} side={T.BackSide} depthWrite={false}/></mesh>
+      <StarField time={time} reduced={reduced}/>
+    </group>
     <Orb time={time} moon={false}/><Orb time={time} moon/>
   </>
 }

@@ -232,6 +232,26 @@ function buildDetails() {
     }
   }
 
+  // A few loose grass tufts and small stones break up the open lawn just
+  // outside the plinth; the front path and the lion's stage stay clear.
+  const accents: [number, number, number][] = [
+    [-3.25, 1.35, .95], [2.45, -1.75, .85], [-1.45, -2.5, .8],
+    [1.95, 1.6, .7], [4.35, 1.1, .9], [-4.6, .9, .75],
+  ]
+  for (let i = 0; i < accents.length; i++) {
+    const [x, z, size] = accents[i]
+    for (let blade = 0; blade < 9; blade++) {
+      const a = rnd(i * 37 + blade + 900) * Math.PI * 2
+      const height = (.1 + rnd(blade * 17 + i + 41) * .16) * size
+      const gx = x + Math.cos(a) * .05 * size, gz = z + Math.sin(a) * .05 * size
+      const bladeGeometry = new T.BufferGeometry().setAttribute('position', new T.Float32BufferAttribute(
+        [-.01, 0, 0, .01, 0, 0, .027 + rnd(blade + i * 3) * .02, height, .014], 3))
+      bladeGeometry.computeVertexNormals()
+      bake(bladeGeometry, 'leaf', blade % 3 ? '#78805a' : '#8b8a62', [gx, .012, gz], [Math.sin(a) * .16, a, Math.cos(a) * .16])
+    }
+    if (i % 2 === 0) stone([x + .16, .035, z + .12], [.15, .07, .12], i + 201, '#7b7e6c')
+  }
+
   for (const bucket of Object.keys(parts) as Bucket[]) {
     if (parts[bucket].length) {
       const geometry = mergeGeometries(parts[bucket])!

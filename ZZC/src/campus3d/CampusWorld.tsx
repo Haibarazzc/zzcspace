@@ -7,6 +7,7 @@ import { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import * as T from 'three'
 import { PLACES, CATEGORIES, type Place } from './places'
 import { buildSakuraGrove } from './grove'
+import { buildCampusDetails, NO_RAYCAST } from './details'
 import LionModel from '../shizi/LionModel'
 
 const IMG_W = 2381, IMG_H = 3367 // 官方地图画布尺寸（地点坐标即其像素坐标）
@@ -22,6 +23,18 @@ function hash(text: string) {
 
 const HEIGHT: Record<string, number> = {
   academic: 8.5, life: 7, dining: 4.5, sports: 4, admin: 6, other: 3.5,
+}
+
+const isGateName = (name: string) => name.includes('门')
+const METRO_NAMES = new Set(['长岭陂', '塘朗'])
+
+// 尺寸的唯一来源：墙体与 details.ts 的细节必须用同一组数字
+function buildingDims(place: Place) {
+  const h = hash(place.name)
+  const baseH = (HEIGHT[place.category] ?? 3.5) + (h % 4) * 1.1
+  const tall = METRO_NAMES.has(place.name) ? 16 : baseH
+  const wide = (place.category === 'sports' ? 13 : 7.5) + (h % 3) * 1.8
+  return { tall, wide, depth: wide * 0.85 }
 }
 
 function MapGround() {
@@ -75,12 +88,9 @@ function Building({ place, index, active, hovered, onHover, onSelect }: {
 }) {
   const meta = CATEGORIES[place.category] ?? CATEGORIES.other
   const [wx, wz] = toWorld(place.x, place.y)
-  const h = hash(place.name)
-  const isGate = place.name.includes('门')
-  const isMetro = place.name === '长岭陂' || place.name === '塘朗'
-  const baseH = (HEIGHT[place.category] ?? 3.5) + (h % 4) * 1.1
-  const tall = isMetro ? 16 : baseH
-  const wide = (place.category === 'sports' ? 13 : 7.5) + (h % 3) * 1.8
+  const isGate = isGateName(place.name)
+  const isMetro = METRO_NAMES.has(place.name)
+  const { tall, wide, depth } = buildingDims(place)
   const label = useLabelTexture(place.name)
   const showLabel = hovered || active
 
@@ -112,11 +122,11 @@ function Building({ place, index, active, hovered, onHover, onSelect }: {
         <group onClick={pick} onPointerOver={over} onPointerOut={out}>
           {/* 奶油色墙体 + 分类色屋顶：建筑模型质感，颜色信息集中在屋顶 */}
           <mesh position={[0, tall / 2, 0]} castShadow receiveShadow>
-            <boxGeometry args={[wide, tall, wide * 0.85]} />
+            <boxGeometry args={[wide, tall, depth]} />
             <meshStandardMaterial color="#fdf6e8" roughness={0.72} />
           </mesh>
           <mesh position={[0, tall + 0.4, 0]} castShadow>
-            <boxGeometry args={[wide + 1.2, 1, wide * 0.85 + 1.2]} />
+            <boxGeometry args={[wide + 1.2, 1, depth + 1.2]} />
             <meshStandardMaterial
               color={meta.color}
               roughness={0.6}
@@ -124,12 +134,6 @@ function Building({ place, index, active, hovered, onHover, onSelect }: {
               emissiveIntensity={hovered ? 0.55 : active ? 0.7 : 0}
             />
           </mesh>
-          {place.category === 'academic' && (
-            <mesh position={[0, tall + 1.5, 0]} castShadow>
-              <boxGeometry args={[wide * 0.5, 1.6, wide * 0.4]} />
-              <meshStandardMaterial color="#fdf6e8" roughness={0.72} />
-            </mesh>
-          )}
         </group>
       )}
       {showLabel && (
@@ -138,6 +142,29 @@ function Building({ place, index, active, hovered, onHover, onSelect }: {
         </sprite>
       )}
     </group>
+  )
+}
+
+// 全校园的立面/屋顶细节合并成 2 个静态网格，避免 42 栋 × 几十个 box 的 draw call。
+// 细节不参与 raycast：指针继续命中原来的墙体和屋顶，hover/点击行为不受影响。
+function BuildingDetails() {
+  const geometry = useMemo(() => buildCampusDetails(
+    PLACES.filter(p => !isGateName(p.name) && !METRO_NAMES.has(p.name)).map(p => {
+      const [wx, wz] = toWorld(p.x, p.y)
+      return { category: p.category, wx, wz, ...buildingDims(p), seed: hash(p.name) }
+    })
+  ), [])
+  useEffect(() => () => { geometry.solids.dispose(); geometry.glass.dispose() }, [geometry])
+  return (
+    <>
+      <mesh geometry={geometry.solids} castShadow receiveShadow raycast={NO_RAYCAST}>
+        <meshStandardMaterial vertexColors roughness={0.78} />
+      </mesh>
+      <mesh geometry={geometry.glass} receiveShadow raycast={NO_RAYCAST}>
+        <meshStandardMaterial vertexColors roughness={0.3} metalness={0.15}
+          emissive="#3f6a85" emissiveIntensity={0.22} />
+      </mesh>
+    </>
   )
 }
 
@@ -256,6 +283,7 @@ export default function CampusWorld({ onSelect, onReady }: { onSelect: (p: Place
             <Building key={place.name} place={place} index={i} active={selected === i} hovered={hovered === i}
               onHover={setHovered} onSelect={choose} />
           ))}
+          <BuildingDetails />
           <CameraRig focus={focus} auto={auto} onManual={() => setAuto(false)} />
         </Suspense>
       </Canvas>

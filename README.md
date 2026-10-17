@@ -37,6 +37,7 @@
 - 音乐（本地音频 + 歌词）：`XHBlogs/components/MusicProvider.tsx`，音频在 `XHBlogs/public/audio/`
 - 门户内容：`ZZC/src/`（介绍页 `App.tsx` 与 `src/data/`，地图 `map/`，樱花古境 `qixia/`，狮小新 `shizi/`）
 - 狮小新已同步 [独立站版本 604e8df](https://github.com/Haibarazzc/haibarazzc.github.io/commit/604e8df5c8ae04e9ec474539dd96196b84bcdcec)：完整 PBR 模型、欢呼、摸头、设计介绍与明信片。网页 GLB 约 6.13 MB，保留原五官与院徽；身体/鬃毛 `#FF9C00`、呆毛 `#FBC700`、手套 `#FFFFFF`、面部 `#F6EAD2`、尾穗 `#A85A3C`；原件和准备脚本保存在独立站仓库。模型由 Vite 打包，适配 `/portfolio/shizi/`，品牌入口返回主站。 庭院包含分块石铺、踏步、庭灯、瓦檐木门、长凳与莲池，樱花远近分级，特写和拍照保留主体净空；水波与飘瓣遵循暂停和减少动态设置。 灌木使用分叉枝干与分层折叠叶冠，保留石路和主体净空；枝干合并、叶片实例化，共两个渲染批次。 庭院外围为360°连续山谷，包含近丘、中景山脊、蓝灰远峰和常绿林；天空、薄云和远景雾随姿态切换冷暖，环绕与明信片共用同一三维环境。
+- 三维场景细节：樱花古境（`ZZC/src/qixia/`）夜间有星场（1400 个点，随相机保持无穷远，切到夜色调淡入，减少动态时不闪烁）和溪岸芦苇、水面漂浮落瓣；3D 沙盘（`ZZC/src/campus3d/`）除校门与地铁站外的建筑加了窗带、勒脚、檐口、女儿墙、入口台阶与屋顶设备，全部细节合并成 2 个渲染批次且不参与 raycast，hover/点击仍落在原墙体上；狮小新庭院（`ZZC/src/shizi/`）补了前景枝梢末端细枝、石台与草地上的落瓣和草簇小石。
 - 门户子站博客：`ZZC/blog/*.md`，`npm run build` 自动生成
 
 归档页（`/archive`）、标签页（`/tags/<标签>`）、RSS（`/rss.xml`）、sitemap（`/sitemap.xml`）

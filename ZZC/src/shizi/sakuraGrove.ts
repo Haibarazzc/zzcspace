@@ -10,8 +10,8 @@ export function blossomRandom(seed: number) {
   return value - Math.floor(value)
 }
 
-// 带缺口的杯状花瓣
-function createPetalGeometry(segments = 5) {
+// 带缺口的杯状花瓣（地面落瓣复用同一形状）
+export function createPetalGeometry(segments = 5) {
   const shape = new T.Shape()
   shape.moveTo(0, -.55)
   shape.bezierCurveTo(-.55, -.18, -.5, .55, -.13, .48)
@@ -49,7 +49,7 @@ function createFlowerGeometry(detail: 'near' | 'far') {
   return geometry
 }
 
-const BLOSSOM_COLORS = ['#fff3ed', '#f4d1ce', '#eabebc', '#ffe8df', '#e6b6b9']
+export const BLOSSOM_COLORS = ['#fff3ed', '#f4d1ce', '#eabebc', '#ffe8df', '#e6b6b9']
 const LEAF_COLORS = ['#84946b', '#9f9f71', '#71835d']
 
 function createLeafGeometry() {
@@ -120,6 +120,14 @@ function buildOneTree(seed: number, detail: 'near' | 'far') {
     const colors = leaf ? LEAF_COLORS : ['#d8a29a', '#e5b4a8', '#c98d89']
     ;(leaf ? leaves : buds).push({ matrix: dummy.matrix.clone(), color: new T.Color(colors[Math.floor(rnd(n + 10) * colors.length)]) })
   }
+  // Limb tips used to stop at a flat tube cap. A two-segment sprig thins that
+  // cap into a point, so the silhouette tapers instead of ending abruptly.
+  const sprig = (start: T.Vector3, out: T.Vector3, length: number, base: number, n: number) => {
+    const direction = out.clone().setY(out.y + (rnd(n + 2) - .3) * .5).normalize()
+    const end = start.clone().addScaledVector(direction, length)
+    const middle = start.clone().lerp(end, .54).add(new T.Vector3(0, (rnd(n + 4) - .2) * length * .4, 0))
+    return branch([start, middle, end], base, base * .16, 2, 3)
+  }
 
   for (let i = 0; i < (near ? 5 : 4); i++) {
     const a = rotation + i * 2.399, length = .35 + rnd(i + 700) * .25
@@ -131,25 +139,54 @@ function buildOneTree(seed: number, detail: 'near' | 'far') {
     const angle = rotation + i * 2.399 + (rnd(i + 30) - .5) * .35, length = (1.65 + rnd(i + 40) * .55) * spread
     const start = trunk.getPoint(.5 + i / (mainCount - 1) * .415), out = new T.Vector3(Math.cos(angle), 0, Math.sin(angle))
     const lift = .65 + rnd(i + 50) * 1.1
-    const main = branch([start, start.clone().addScaledVector(out, length * .25).add(new T.Vector3(0, .2, 0)), start.clone().addScaledVector(out, length * .7).add(new T.Vector3(0, lift * .72, 0)), start.clone().addScaledVector(out, length).add(new T.Vector3(0, lift, 0))], .09 - i * .005, .025, near ? 7 : 5, near ? 7 : 5)
+    const main = branch([start, start.clone().addScaledVector(out, length * .25).add(new T.Vector3(0, .2, 0)), start.clone().addScaledVector(out, length * .7).add(new T.Vector3(0, lift * .72, 0)), start.clone().addScaledVector(out, length).add(new T.Vector3(0, lift, 0))], .082 - i * .004, .02, near ? 7 : 5, near ? 7 : 5)
     for (let j = 0; j < secondaryCount; j++) {
       const n = i * 900 + j * 120 + 60, origin = main.getPoint(.3 + j / (secondaryCount - 1) * .56), side = j % 2 ? 1 : -1
       const direction = angle + side * (.45 + rnd(n) * .65), reach = (.62 + rnd(n + 1) * .55) * spread
       const lateral = new T.Vector3(Math.cos(direction) * reach, .18 + rnd(n + 2) * .5, Math.sin(direction) * reach)
-      const secondary = branch([origin, origin.clone().addScaledVector(lateral, .48).add(new T.Vector3(0, .08, 0)), origin.clone().add(lateral)], .029, .009, near ? 5 : 3, near ? 5 : 4)
+      const secondary = branch([origin, origin.clone().addScaledVector(lateral, .48).add(new T.Vector3(0, .08, 0)), origin.clone().add(lateral)], .026, .0075, near ? 5 : 3, near ? 5 : 4)
       for (let k = 0; k < twigCount; k++) {
         const m = n + k * 29, at = secondary.getPoint(.2 + k / (twigCount - 1) * .66), a = direction + (k % 2 ? 1 : -1) * (.6 + rnd(m + 5) * .5)
         const extent = .37 + rnd(m + 6) * .4, dy = (k === 3 ? -.18 : .12) + rnd(m + 7) * .24
         const end = at.clone().add(new T.Vector3(Math.cos(a) * extent, dy, Math.sin(a) * extent))
-        const twig = branch([at, at.clone().lerp(end, .5).add(new T.Vector3(0, .1, 0)), end], .011, .003, near ? 3 : 2, near ? 4 : 3)
+        const twig = branch([at, at.clone().lerp(end, .5).add(new T.Vector3(0, .1, 0)), end], .01, .0025, near ? 3 : 2, near ? 4 : 3)
         const clusterCount = near ? 4 : 3
         for (let b = 0; b < clusterCount; b++) flower(twig.getPoint(.2 + b / (clusterCount - 1) * .775), near ? 3 : 2, m * 31 + b * 8)
         if (k % 2 === 0) newGrowth(end, m * 59, false)
+        // Near twigs grow one last fine shoot; far trees skip it to stay light.
+        if (near) {
+          const n3 = 8800 + m * 17 + k * 41, ta = a + (rnd(n3) - .5) * .8
+          const continuation = sprig(end, new T.Vector3(Math.cos(ta), .28 + rnd(n3 + 1) * .4, Math.sin(ta)), .17 + rnd(n3 + 2) * .15, .0028, n3)
+          const tip = continuation.getPoint(1)
+          flower(tip, k % 2 ? 1 : 2, n3 * 7)
+          newGrowth(tip, n3 * 11, false)
+          if (k === 1) newGrowth(continuation.getPoint(.5), n3 * 13, true)
+        }
       }
       const secondaryClusters = near ? 4 : 3
       for (let b = 0; b < secondaryClusters; b++) flower(secondary.getPoint(.44 + b / (secondaryClusters - 1) * .51), near ? 3 : 2, n * 41 + b * 17)
       newGrowth(secondary.getPoint(.7), n * 47, true)
       if (near) newGrowth(secondary.getPoint(.92), n * 53, true)
+      // One fine continuation at the secondary tip keeps the canopy edges
+      // pointed instead of square, without filling the gaps between limbs.
+      const n2 = 7300 + n * 3, sa = direction + (rnd(n2) - .5) * .9
+      const continuation = sprig(secondary.getPoint(1), new T.Vector3(Math.cos(sa), .38 + rnd(n2 + 1) * .5, Math.sin(sa)), (.3 + rnd(n2 + 2) * .25) * spread, .0068, n2)
+      const tip = continuation.getPoint(1)
+      flower(tip, near ? 2 : 1, n2 * 11)
+      if (near) newGrowth(tip, n2 * 13, false)
+    }
+    // The main limbs are the bluntest tips of the silhouette; two fine upward
+    // sprigs carry a little blossom and let the limb fade out.
+    const mainTip = main.getPoint(1)
+    for (let s = 0; s < (near ? 2 : 1); s++) {
+      const n = 6100 + i * 90 + s * 37, a = angle + (s ? .5 : -.5) + (rnd(n) - .5) * .6
+      const continuation = sprig(mainTip, new T.Vector3(Math.cos(a), .42 + rnd(n + 1) * .5, Math.sin(a)), (.4 + rnd(n + 2) * .3) * spread, .0085, n)
+      const tip = continuation.getPoint(1)
+      flower(tip, near ? 2 : 1, n * 13)
+      if (near) {
+        newGrowth(tip, n * 17, false)
+        if (s) newGrowth(continuation.getPoint(.55), n * 19, true)
+      }
     }
   }
   for (let i = 0; i < (near ? 42 : 24); i++) {
