@@ -13,8 +13,8 @@ export default function Navbar() {
   const pathname = usePathname();
   const [lang, setLang] = useState<'zh' | 'en'>('zh');
   const NAV_NAMES: Record<'zh' | 'en', string[]> = {
-    zh: ['首页', '个人介绍', '杂谈', '归档', '照片墙', '音乐', '赛车', '贪吃蛇', '校园地图', '樱花古境', '狮小新', '雨夜便利店'],
-    en: ['Home', 'About', 'Chatter', 'Archive', 'Photos', 'Music', 'Racing', 'Snake', 'Campus map', 'Sakura Courtyard', 'Lion Mascot', 'Rainy Konbini'],
+    zh: ['首页', '个人介绍', '杂谈', '归档', '照片墙', '音乐', '赛车', '贪吃蛇', '校园地图', '3D 沙盘', '樱花古境', '狮小新', '雨夜便利店'],
+    en: ['Home', 'About', 'Chatter', 'Archive', 'Photos', 'Music', 'Racing', 'Snake', 'Campus map', '3D Sandbox', 'Sakura Courtyard', 'Lion Mascot', 'Rainy Konbini'],
   };
 
   // --- 🌟 物理引擎：菜单转动逻辑 ---
@@ -83,6 +83,7 @@ export default function Navbar() {
     { name: '赛车', href: '/game' },
     { name: '贪吃蛇', href: '/snake' },
     { name: '校园地图', href: '/portfolio/map/', external: true },
+    { name: '3D 沙盘', href: '/portfolio/campus3d/', external: true },
     { name: '樱花古境', href: '/portfolio/qixia/', external: true },
     { name: '狮小新', href: '/portfolio/shizi/', external: true },
     { name: '雨夜便利店', href: '/portfolio/rainy-store/', external: true },
@@ -105,7 +106,7 @@ export default function Navbar() {
             <span className="text-indigo-500 mx-1">{siteConfig.navSuffix || 'の'}</span>
             {siteConfig.navAfter || '宝藏之地'}
           </Link>
-          <nav className="flex gap-4 lg:gap-8 text-sm font-bold">
+          <nav className="flex gap-2 xl:gap-6 text-[13px] font-bold whitespace-nowrap">
             {/* PC端依然使用全量的 navLinks */}
             {i18nNavLinks.map((link) => {
               const isActive = pathname === link.href || pathname === `${link.href}/`;
